@@ -17,38 +17,108 @@
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 
 <style>
-body { font-family: 'Roboto', sans-serif; background: #f0f2f5; padding: 20px; }
-h2 { text-align: center; color: #0b69ff; margin-bottom: 20px; }
-.section { padding: 20px; margin-bottom: 15px; border-radius: 12px; color: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: background 0.3s; }
+body {
+  font-family: 'Roboto', sans-serif;
+  background: #f0f2f5;
+  padding: 20px;
+}
+
+h2 {
+  text-align: center;
+  color: #0b69ff;
+  margin-bottom: 20px;
+}
+
+.section {
+  padding: 20px;
+  margin-bottom: 15px;
+  border-radius: 12px;
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  transition: background 0.3s;
+}
+
 .korea { background: #4fc3f7; }
 .currency { background: #26a69a; }
 .russia { background: #81c784; }
-label { display: block; margin-top: 10px; font-weight: bold; }
-input { width: 100%; padding: 10px; margin-top: 5px; border-radius: 8px; border: none; font-size:16px; box-sizing:border-box; }
-.checkbox { display:flex; align-items:center; margin-top:10px; font-weight: normal; color: #111; }
-.checkbox input { margin-right:10px; }
-button { width: 100%; padding: 14px; margin-top: 20px; font-size: 18px; border:none; border-radius:10px; cursor:pointer; background:#0b69ff; color:white; font-weight:bold; transition: background 0.3s; }
-button:hover { background:#0756d1; }
-button.clear { background:#ccc; color:#111; margin-top:10px; }
-.result { margin-top: 20px; padding: 20px; border-radius:12px; background:#fff3e0; font-size:18px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-.result p { margin: 10px 0; font-weight: bold; font-size: 18px; }
-hr { border: 0; border-top: 2px dashed #ccc; margin: 10px 0; }
+
+/* Лейблы только внутри секций */
+.section label {
+  display: block;
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  border-radius: 8px;
+  border: none;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+/* Чекбокс */
 .checkbox {
   display: flex;
-  align-items: center;
-  margin-top: 10px;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 15px;
 }
-
 .checkbox input {
-  margin-right: 10px;
+  flex: 0 0 auto;
+  margin-top: 3px;
+}
+.checkbox label {
+  display: inline-block !important;
+  margin: 0 !important;
+  font-weight: normal !important;
+  line-height: 1.4;
+  white-space: normal;
+  flex: 1 1 auto;
 }
 
-.checkbox label {
-  display: inline-block;   /* вместо block */
-  margin: 0 !important;    /* убираем отступ сверху */
-  font-weight: normal;     /* текст обычный, не жирный */
-  white-space: normal;     /* перенос строк включён */
-  flex: 1;                 /* занимает всё оставшееся место */
+/* Кнопки */
+button {
+  width: 100%;
+  padding: 14px;
+  margin-top: 20px;
+  font-size: 18px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  background: #0b69ff;
+  color: white;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+button:hover { background:#0756d1; }
+button.clear {
+  background:#ccc;
+  color:#111;
+  margin-top:10px;
+}
+
+/* Результат */
+.result {
+  margin-top: 20px;
+  padding: 20px;
+  border-radius: 12px;
+  background: #fff3e0;
+  font-size: 18px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.result p {
+  margin: 10px 0;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+hr {
+  border: 0;
+  border-top: 2px dashed #ccc;
+  margin: 10px 0;
 }
 </style>
 </head>

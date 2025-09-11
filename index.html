@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Калькулятор авто из Кореи</title>
+
+<!-- Иконка для браузера и телефона -->
+<link rel="icon" href="icon.png" type="image/png">
+<link rel="apple-touch-icon" href="icon.png">
+
+<!-- Подключаем PWA манифест -->
+<link rel="manifest" href="manifest.json">
+
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+body { font-family: 'Roboto', sans-serif; background: #f0f2f5; padding: 20px; }
+h2 { text-align: center; color: #0b69ff; margin-bottom: 20px; }
+.section { padding: 20px; margin-bottom: 15px; border-radius: 12px; color: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: background 0.3s; }
+.korea { background: #4fc3f7; }
+.currency { background: #26a69a; }
+.russia { background: #81c784; }
+label { display: block; margin-top: 10px; font-weight: bold; }
+input { width: 100%; padding: 10px; margin-top: 5px; border-radius: 8px; border: none; font-size:16px; box-sizing:border-box; }
+.checkbox { display:flex; align-items:center; margin-top:10px; font-weight: normal; color: #111; }
+.checkbox input { margin-right:10px; }
+button { width: 100%; padding: 14px; margin-top: 20px; font-size: 18px; border:none; border-radius:10px; cursor:pointer; background:#0b69ff; color:white; font-weight:bold; transition: background 0.3s; }
+button:hover { background:#0756d1; }
+button.clear { background:#ccc; color:#111; margin-top:10px; }
+.result { margin-top: 20px; padding: 20px; border-radius:12px; background:#fff3e0; font-size:18px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+.result p { margin: 10px 0; font-weight: bold; font-size: 18px; }
+hr { border: 0; border-top: 2px dashed #ccc; margin: 10px 0; }
+</style>
+</head>
+<body>
+
+<h2>🚗 Калькулятор доставки авто из Кореи</h2>
+
+<div class="section korea" id="blockKorea">
+  <h3>🌏 Корея</h3>
+  <label>Цена авто (₩): <input type="number" id="priceKrw" placeholder="Введите цену авто"></label>
+  <label>Расходы в Корее включая фрахт (₩): <input type="number" id="expensesKrw" placeholder="Введите расходы"></label>
+</div>
+
+<div class="section currency" id="blockCurrency">
+  <h3>💱 Курс валют</h3>
+  <label>USDT → ₽: <input type="number" id="rubUsdt" placeholder="Сколько рублей за 1 USDT" step="0.1"></label>
+  <label>USDT → ₩: <input type="number" id="usdtKrw" placeholder="Сколько вон за 1 USDT" step="0.1"></label>
+</div>
+
+<div class="section russia" id="blockRussia">
+  <h3>🇷🇺 Россия</h3>
+  <label>Пошлина и сборы (₽): <input type="number" id="dutyRub" placeholder="Например 150000"></label>
+  <label>Таможенное оформление и брокер (₽): <input type="number" id="brokerRub" placeholder="Например 70000"></label>
+  <label>Доставка по России (₽): <input type="number" id="deliveryRub" placeholder="Например 50000"></label>
+</div>
+
+<div class="checkbox">
+  <input type="checkbox" id="insuranceCheck">
+  <label for="insuranceCheck">Добавить страховку 0,03% от финальной суммы</label>
+</div>
+
+<button onclick="calculate()">Рассчитать</button>
+<button class="clear" onclick="clearAll()">Очистить поля</button>
+
+<div class="result" id="result"></div>
+
+<script>
+// Анимация чисел с разделителями тысяч
+function animateValue(id, start, end, duration) {
+    let obj = document.getElementById(id);
+    let range = end - start;
+    let startTime = null;
+    function step(timestamp) {
+        if (!startTime) startTime = timestamp;
+        let progress = timestamp - startTime;
+        let value = Math.min(Math.floor(start + (range * (progress / duration))), end);
+        obj.innerHTML = value.toLocaleString('ru-RU') + ' ₽';
+        if (progress < duration) window.requestAnimationFrame(step);
+        else obj.innerHTML = end.toLocaleString('ru-RU') + ' ₽';
+    }
+    window.requestAnimationFrame(step);
+}
+
+function calculate(){
+  let priceKrw = parseFloat(document.getElementById('priceKrw').value) || 0;
+  let expensesKrw = parseFloat(document.getElementById('expensesKrw').value) || 0;
+  let rubUsdt = parseFloat(document.getElementById('rubUsdt').value) || 0;
+  let usdtKrw = parseFloat(document.getElementById('usdtKrw').value) || 0;
+  let dutyRub = parseFloat(document.getElementById('dutyRub').value) || 0;
+  let brokerRub = parseFloat(document.getElementById('brokerRub').value) || 0;
+  let deliveryRub = parseFloat(document.getElementById('deliveryRub').value) || 0;
+  let insuranceCheck = document.getElementById('insuranceCheck').checked;
+
+  let totalKrw = priceKrw + expensesKrw;
+  let rubNeededViaUsdt = (totalKrw / usdtKrw) * rubUsdt;
+  let preFinalRub = rubNeededViaUsdt + dutyRub + brokerRub + deliveryRub;
+  let insuranceRub = insuranceCheck ? preFinalRub * 0.0003 : 0;
+  let finalRub = preFinalRub + insuranceRub;
+
+  // Подсветка блоков
+  document.getElementById('blockKorea').style.background = '#29b6f6';
+  document.getElementById('blockRussia').style.background = '#66bb6a';
+  document.getElementById('result').style.background = '#ffe0b2';
+
+  document.getElementById('result').innerHTML = `
+    <p>💰 В Корее: <span id="valKorea">0 ₽</span></p>
+    <p>🚛 В России: <span id="valRussia">0 ₽</span></p>
+    ${insuranceCheck ? `<p>🛡️ Страховка: <span id="valInsurance">0 ₽</span></p>` : ''}
+    <hr>
+    <p>🏁 Под ключ: <span id="valFinal">0 ₽</span></p>
+  `;
+
+  animateValue('valKorea', 0, Math.round(rubNeededViaUsdt), 1000);
+  animateValue('valRussia', 0, Math.round(dutyRub + brokerRub + deliveryRub), 1000);
+  if(insuranceCheck) animateValue('valInsurance', 0, Math.round(insuranceRub), 1000);
+  animateValue('valFinal', 0, Math.round(finalRub), 1200);
+}
+
+function clearAll(){
+  document.getElementById('priceKrw').value='';
+  document.getElementById('expensesKrw').value='';
+  document.getElementById('rubUsdt').value='';
+  document.getElementById('usdtKrw').value='';
+  document.getElementById('dutyRub').value='';
+  document.getElementById('brokerRub').value='';
+  document.getElementById('deliveryRub').value='';
+  document.getElementById('insuranceCheck').checked=false;
+  document.getElementById('result').innerHTML='';
+  document.getElementById('blockKorea').style.background = '#4fc3f7';
+  document.getElementById('blockRussia').style.background = '#81c784';
+}
+</script>
+
+</body>
+</html>

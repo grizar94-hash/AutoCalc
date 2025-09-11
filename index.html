@@ -16,7 +16,7 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 
-<style>
+  <style>
 body {
   font-family: 'Roboto', sans-serif;
   background: #f0f2f5;
@@ -59,24 +59,32 @@ input {
   box-sizing: border-box;
 }
 
-/* Чекбокс */
+/* Чекбокс как кнопка */
 .checkbox {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
   margin-top: 15px;
 }
-.checkbox input {
-  flex: 0 0 auto;
-  margin-top: 3px;
+.checkbox input[type="checkbox"] {
+  display: none;
 }
 .checkbox label {
-  display: inline-block !important;
-  margin: 0 !important;
-  font-weight: normal !important;
-  line-height: 1.4;
-  white-space: normal;
-  flex: 1 1 auto;
+  display: block;
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  background: #4caf50;   /* зелёный */
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.checkbox label:hover {
+  background: #43a047;
+}
+.checkbox input[type="checkbox"]:checked + label {
+  background: #2e7d32;
 }
 
 /* Кнопки */

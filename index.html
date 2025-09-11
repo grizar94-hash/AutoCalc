@@ -128,9 +128,45 @@ hr {
   border-top: 2px dashed #ccc;
   margin: 10px 0;
 }
+    /* Центрируем весь калькулятор и убираем скролл */
+body {
+  overflow-x: hidden;
+}
+
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* Делаем блок страховки как кнопку */
+.checkbox {
+  margin: 15px 0;
+}
+
+.checkbox label {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 14px;
+  border-radius: 10px;
+  background: #43a047;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.checkbox label:hover {
+  background: #388e3c;
+}
+
+.checkbox input {
+  display: none; /* убираем галочку, чтобы остался только стиль кнопки */
+}
 </style>
 </head>
 <body>
+<main class="wrap">
 
 <h2>🚗 Калькулятор доставки авто из Кореи</h2>
 
@@ -232,5 +268,6 @@ function clearAll(){
 }
 </script>
 
+</main>
 </body>
 </html>

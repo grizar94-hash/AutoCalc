@@ -163,6 +163,33 @@ body {
 .checkbox input {
   display: none; /* убираем галочку, чтобы остался только стиль кнопки */
 }
+    button.insurance {
+  width: 100%;
+  padding: 14px;
+  margin-top: 10px;
+  font-size: 16px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  background: #4caf50;
+  color: white;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: background 0.3s;
+}
+
+button.insurance:hover {
+  background: #388e3c;
+}
+
+button.insurance input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
 </style>
 </head>
 <body>
@@ -189,13 +216,12 @@ body {
   <label>Доставка по России (₽): <input type="number" id="deliveryRub" placeholder="Например 50000"></label>
 </div>
 
-<div class="checkbox">
+<!-- Кнопка-страховка -->
+<button class="insurance">
   <input type="checkbox" id="insuranceCheck">
-  <label for="insuranceCheck">
-    Добавить страховку 0,3% от финальной суммы
-  </label>
-</div>
-
+  Добавить страховку 0,3% от финальной суммы
+</button>
+  
 <button onclick="calculate()">Рассчитать</button>
 <button class="clear" onclick="clearAll()">Очистить поля</button>
 

@@ -33,6 +33,23 @@ button.clear { background:#ccc; color:#111; margin-top:10px; }
 .result { margin-top: 20px; padding: 20px; border-radius:12px; background:#fff3e0; font-size:18px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
 .result p { margin: 10px 0; font-weight: bold; font-size: 18px; }
 hr { border: 0; border-top: 2px dashed #ccc; margin: 10px 0; }
+.checkbox {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.checkbox input {
+  margin-right: 10px;
+}
+
+.checkbox label {
+  display: inline-block;   /* вместо block */
+  margin: 0 !important;    /* убираем отступ сверху */
+  font-weight: normal;     /* текст обычный, не жирный */
+  white-space: normal;     /* перенос строк включён */
+  flex: 1;                 /* занимает всё оставшееся место */
+}
 </style>
 </head>
 <body>

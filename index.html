@@ -203,7 +203,7 @@ const CUSTOMS_FEE = [
   {max:200000, fee:1071},
   {max:450000, fee:2142},
   {max:1200000, fee:4284},
-  {max:2500000, fee:11746},   // как на твоём эталоне из Drom
+  {max:2500000, fee:11746},   // как на эталоне Drom
   {max:5000000, fee:20000},
   {max:10000000, fee:30000},
   {max:1e12, fee:30000}
@@ -217,7 +217,7 @@ function pickRow(tbl,age,cc){ return tbl[age].find(r=>cc>r.min && cc<=r.max); }
 function dutyICE({table,age,cc,ts,eurRub}){ const r=pickRow(table,age,cc); const ad=r.adval?ts*r.adval:0; const sp=r.spec?cc*r.spec*eurRub:0; return Math.max(ad,sp); }
 function dutyEV(ts){ return ts*0.15; }
 function customsFee(ts){ return CUSTOMS_FEE.find(b=>ts<=b.max).fee; }
-// утиль: для твоего кейса физ.лицо 3–5 лет — 5200 ₽; остальное — приближённо
+// утиль (под твой кейс физлицо 3–5 лет = 5200 ₽; остальное — приближённо)
 function utilFee({importer,isEV,age,cc,kw}){
   if(importer==='individual' && !isEV && age==='3-5') return 5200;
   if(importer==='individual' && isEV) return age==='<3' ? 3400 : 5200;
@@ -321,32 +321,32 @@ function clearAll(){
   recompute();
 }
 
-/* ===== PDF — «как в оригинале», таблицами ===== */
+/* ===== PDF — красивый отчёт, вписанный на один лист A4 ===== */
 function fmt(n, d=0){
   if (!isFinite(n)) return '—';
   const v = d ? Number(n).toFixed(d) : Math.round(n);
   return Number(v).toLocaleString('ru-RU');
 }
 async function downloadPDF(){
-  // значения для отчёта
-  const v = id => num($(id)?.value);
+  const n = v => (parseFloat(String(v ?? '').replace(/\s/g,'').replace(',','.')))||0;
+  const val = id => n($(id)?.value);
   const insuranceOn = $('insuranceCheck').checked;
 
-  const priceKrw    = v('priceKrw');
-  const expensesKrw = v('expensesKrw');
-  const rubUsdt     = v('rubUsdt');
-  const usdtKrw     = v('usdtKrw');
-  const eurRub      = v('eurRub');
-  const krwRub      = v('krwRub');
+  const priceKrw    = val('priceKrw');
+  const expensesKrw = val('expensesKrw');
+  const rubUsdt     = val('rubUsdt');
+  const usdtKrw     = val('usdtKrw');
+  const eurRub      = val('eurRub');
+  const krwRub      = val('krwRub');
 
-  const autoDuty    = v('autoDuty');
-  const autoCustomsFee = v('autoCustomsFee');
-  const autoUtil    = v('autoUtil');
-  const autoTotal   = v('autoTotalCustoms');
-  const priceWithDutyRub = v('priceWithDutyRub');
+  const autoDuty    = val('autoDuty');
+  const autoCustomsFee = val('autoCustomsFee');
+  const autoUtil    = val('autoUtil');
+  const autoTotal   = val('autoTotalCustoms');
+  const priceWithDutyRub = val('priceWithDutyRub');
 
-  const brokerRub   = v('brokerRub');
-  const deliveryRub = v('deliveryRub');
+  const brokerRub   = val('brokerRub');
+  const deliveryRub = val('deliveryRub');
 
   const koreaKrw        = priceKrw + expensesKrw;
   const rubNeeded       = usdtKrw ? (koreaKrw / usdtKrw) * rubUsdt : 0;
@@ -355,188 +355,161 @@ async function downloadPDF(){
   const insuranceRub    = insuranceOn ? preFinal * 0.003 : 0;
   const finalRub        = preFinal + insuranceRub;
 
-  // строим «чистую» страницу отчёта
+  // Собираем «чистую» страницу отчёта
   const page = document.createElement('div');
   page.style.cssText = `
     position:fixed; left:-99999px; top:0; width:794px; /* A4 @96dpi */
     background:#fff; color:#000; font-family:-apple-system, system-ui, Segoe UI, Roboto, Arial, sans-serif;
   `;
+  const add = html => { const d=document.createElement('div'); d.innerHTML=html; page.appendChild(d); };
 
-  // верхняя чёрная полоса
-  const topBar = document.createElement('div');
-  topBar.style.cssText = 'height:10px;background:#000;width:100%;';
-  page.appendChild(topBar);
+  add('<div style="height:10px;background:#000;width:100%"></div>');
 
-  // шапка: логотип + контакты
-  const header = document.createElement('div');
-  header.style.cssText = 'display:flex;justify-content:space-between;align-items:flex-start;padding:18px 24px 0 24px;gap:16px;';
+  const hasLogo = await (async()=>{const t=new Image(); t.src='logo_pdf.png'; try{await new Promise(r=>{t.onload=r;t.onerror=r})}catch{} return (t.complete&&t.naturalWidth)?'logo_pdf.png':'logo.png';})();
+  add(`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:18px 24px 0 24px;gap:16px;">
+      <img src="${hasLogo}" alt="Harmex" style="height:90px;object-fit:contain">
+      <div style="text-align:right; font-size:12px; line-height:1.5;">
+        <strong style="font-size:14px">Harmex</strong><br>
+        사업자등록번호: 749-11-02981<br>
+        Tel: +82 10 3056 0903<br>
+        Email: annamoloz95@gmail.com<br>
+        Address: 201, 42 Hambak-ro84beon-gil,<br>
+        Yeonsu-dong, Yeonsu-gu, Incheon, South Korea<br>
+        Director: Molozhavaia Anna
+      </div>
+    </div>
+    <div style="text-align:center; font-weight:700; font-size:20px; margin:16px 24px 4px;">Отчёт по расчёту автомобиля из Кореи</div>
+    <div style="text-align:center; font-size:12px; color:#222; margin-bottom:10px;">Дата: ${new Date().toLocaleDateString('ru-RU')}</div>
+    <div style="height:1px;background:#000;margin:6px 24px 12px;"></div>
+  `);
 
-  const logo = document.createElement('img');
-  const tryLarge = new Image(); tryLarge.src = 'logo_pdf.png';
-  await new Promise(r => { tryLarge.onload = r; tryLarge.onerror = r; });
-  logo.src = (tryLarge.complete && tryLarge.naturalWidth) ? 'logo_pdf.png' : 'logo.png';
-  logo.alt = 'Harmex';
-  logo.style.cssText = 'height:90px;object-fit:contain;';
-  header.appendChild(logo);
-
-  const contacts = document.createElement('div');
-  contacts.style.cssText = 'text-align:right; font-size:12px; line-height:1.5;';
-  contacts.innerHTML = `
-    <strong style="font-size:14px">Harmex</strong><br>
-    사업자등록번호: 749-11-02981<br>
-    Tel: +82 10 3056 0903<br>
-    Email: annamoloz95@gmail.com<br>
-    Address: 201, 42 Hambak-ro84beon-gil,<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Yeonsu-dong, Yeonsu-gu, Incheon, South Korea<br>
-    Director: Molozhavaia Anna
-  `;
-  header.appendChild(contacts);
-  page.appendChild(header);
-
-  // заголовок и дата
-  const title = document.createElement('div');
-  title.textContent = 'Отчёт по расчёту автомобиля из Кореи';
-  title.style.cssText = 'text-align:center; font-weight:700; font-size:20px; color:#000; margin:16px 24px 4px;';
-  page.appendChild(title);
-
-  const date = document.createElement('div');
-  date.textContent = 'Дата: ' + new Date().toLocaleDateString('ru-RU');
-  date.style.cssText = 'text-align:center; font-size:12px; color:#222; margin-bottom:10px;';
-  page.appendChild(date);
-
-  const hr = document.createElement('div');
-  hr.style.cssText = 'height:1px;background:#000;margin:6px 24px 12px;';
-  page.appendChild(hr);
-
-  // ===== Курсы валют =====
-  const rates = document.createElement('div');
-  rates.style.cssText = 'margin:0 24px 10px;';
-  rates.innerHTML = `
-    <div style="font-weight:700; margin:6px 0;">Курсы валют</div>
-    <table style="width:100%; border-collapse:collapse; font-size:14px;">
-      <thead>
-        <tr>
-          <th style="text-align:left; border-bottom:2px solid #000; padding:8px 6px;">Пара</th>
-          <th style="text-align:right; border-bottom:2px solid #000; padding:8px 6px;">Курс</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td style="padding:8px 6px; border-bottom:1px solid #e5e7eb;">1 USDT → ₽</td>
-            <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">${fmt(rubUsdt,4)} ₽</td></tr>
-        <tr><td style="padding:8px 6px; border-bottom:1px solid #e5e7eb;">1 USDT → ₩</td>
-            <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">${fmt(usdtKrw,2)} ₩</td></tr>
-        <tr><td style="padding:8px 6px; border-bottom:1px solid #e5e7eb;">1 EUR → ₽ (ЦБ)</td>
-            <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">${fmt(eurRub,6)} ₽</td></tr>
-        <tr><td style="padding:8px 6px;">1 KRW → ₽ (ЦБ)</td>
-            <td style="padding:8px 6px; text-align:right;">${fmt(krwRub,6)} ₽</td></tr>
-      </tbody>
-    </table>
-  `;
-  page.appendChild(rates);
-
-  // ===== Корея =====
-  const kor = document.createElement('div');
-  kor.style.cssText = 'margin:10px 24px;';
-  kor.innerHTML = `
-    <div style="font-weight:700; margin:6px 0;">Корея</div>
-    <table style="width:100%; border-collapse:collapse; font-size:14px;">
-      <tbody>
-        <tr><td style="padding:8px 6px; border-bottom:1px solid #e5e7eb;">Цена авто (KRW)</td>
-            <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">${fmt(priceKrw)} ₩</td></tr>
-        <tr><td style="padding:8px 6px; border-bottom:2px solid #000;">Расходы в Корее: автоподбор, комиссия дилера, экспортные документы, автовоз до порта, фрахт до Владивостока (KRW)</td>
-            <td style="padding:8px 6px; text-align:right; border-bottom:2px solid #000;">${fmt(expensesKrw)} ₩</td></tr>
-        <tr><td style="padding:8px 6px;"><strong>Сколько рублей подготовить для перевода USDT</strong></td>
-            <td style="padding:8px 6px; text-align:right;"><strong>${fmt(rubNeeded)} ₽</strong></td></tr>
-      </tbody>
-    </table>
-  `;
-  page.appendChild(kor);
-
-  // ===== Россия =====
-  const rus = document.createElement('div');
-  rus.style.cssText = 'margin:10px 24px;';
-  rus.innerHTML = `
-    <div style="font-weight:700; margin:6px 0;">Россия</div>
-    <table style="width:100%; border-collapse:collapse; font-size:14px;">
-      <tbody>
-        <tr><td style="padding:8px 6px; border-bottom:1px solid #e5e7eb;">Пошлина</td>
-            <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">${fmt(autoDuty)} ₽</td></tr>
-        <tr><td style="padding:8px 6px; border-bottom:1px solid #e5e7eb;">Таможенный сбор</td>
-            <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">${fmt(autoCustomsFee)} ₽</td></tr>
-        <tr><td style="padding:8px 6px; border-bottom:2px solid #000;">Утилизационный сбор</td>
-            <td style="padding:8px 6px; text-align:right; border-bottom:2px solid #000;">${fmt(autoUtil)} ₽</td></tr>
-        <tr><td style="padding:8px 6px;"><strong>Итого «Пошлина и сборы»</strong></td>
-            <td style="padding:8px 6px; text-align:right;"><strong>${fmt(autoTotal)} ₽</strong></td></tr>
-        <tr><td style="padding:8px 6px;">Цена авто с пошлиной и сборами (RUB)</td>
-            <td style="padding:8px 6px; text-align:right;">${fmt(priceWithDutyRub)} ₽</td></tr>
-        <tr><td style="padding:8px 6px;">Услуги брокера, СБКТС, ЭПТС, РПП и СВХ, экспертиза</td>
-            <td style="padding:8px 6px; text-align:right;">${fmt(brokerRub)} ₽</td></tr>
-        <tr><td style="padding:8px 6px; border-bottom:2px solid #000;">Доставка по России</td>
-            <td style="padding:8px 6px; text-align:right; border-bottom:2px solid #000;">${fmt(deliveryRub)} ₽</td></tr>
-        <tr><td style="padding:8px 6px;"><strong>Итого по России</strong></td>
-            <td style="padding:8px 6px; text-align:right;"><strong>${fmt(russiaSubtotal)} ₽</strong></td></tr>
-      </tbody>
-    </table>
-  `;
-  page.appendChild(rus);
-
-  // ===== Дополнительно (страховка) =====
-  if (insuranceOn){
-    const add = document.createElement('div');
-    add.style.cssText = 'margin:10px 24px;';
-    add.innerHTML = `
-      <div style="font-weight:700; margin:6px 0;">Дополнительно</div>
+  add(`
+    <div style="margin:0 24px 10px;">
+      <div style="font-weight:700; margin:6px 0;">Курсы валют</div>
       <table style="width:100%; border-collapse:collapse; font-size:14px;">
+        <thead>
+          <tr>
+            <th style="text-align:left; border-bottom:2px solid #000; padding:8px 6px;">Пара</th>
+            <th style="text-align:right; border-bottom:2px solid #000; padding:8px 6px;">Курс</th>
+          </tr>
+        </thead>
         <tbody>
-          <tr><td style="padding:8px 6px; border-bottom:2px solid #000;">Страховка (0,3%)</td>
-              <td style="padding:8px 6px; text-align:right; border-bottom:2px solid #000;">${fmt(insuranceRub)} ₽</td></tr>
+          <tr><td style="padding:8px 6px; border-bottom:1px solid #e5e7eb;">1 USDT → ₽</td>
+              <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">${fmt(rubUsdt,4)} ₽</td></tr>
+          <tr><td style="padding:8px 6px; border-bottom:1px solid #e5e7eb;">1 USDT → ₩</td>
+              <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">${fmt(usdtKrw,2)} ₩</td></tr>
+          <tr><td style="padding:8px 6px; border-bottom:1px solid #e5e7eb;">1 EUR → ₽ (ЦБ)</td>
+              <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">${fmt(eurRub,6)} ₽</td></tr>
+          <tr><td style="padding:8px 6px;">1 KRW → ₽ (ЦБ)</td>
+              <td style="padding:8px 6px; text-align:right;">${fmt(krwRub,6)} ₽</td></tr>
         </tbody>
       </table>
-    `;
-    page.appendChild(add);
+    </div>
+  `);
+
+  add(`
+    <div style="margin:10px 24px;">
+      <div style="font-weight:700; margin:6px 0;">Корея</div>
+      <table style="width:100%; border-collapse:collapse; font-size:14px;">
+        <tbody>
+          <tr><td style="padding:8px 6px; border-bottom:1px solid #e5e7eb;">Цена авто (KRW)</td>
+              <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">${fmt(priceKrw)} ₩</td></tr>
+          <tr><td style="padding:8px 6px; border-bottom:2px solid #000;">Расходы в Корее включая фрахт (KRW)</td>
+              <td style="padding:8px 6px; text-align:right; border-bottom:2px solid #000;">${fmt(expensesKrw)} ₩</td></tr>
+          <tr><td style="padding:8px 6px;"><strong>Сколько рублей подготовить для перевода USDT</strong></td>
+              <td style="padding:8px 6px; text-align:right;"><strong>${fmt(rubNeeded)} ₽</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+  `);
+
+  add(`
+    <div style="margin:10px 24px;">
+      <div style="font-weight:700; margin:6px 0;">Россия</div>
+      <table style="width:100%; border-collapse:collapse; font-size:14px;">
+        <tbody>
+          <tr><td style="padding:8px 6px; border-bottom:1px solid #e5e7eb;">Пошлина</td>
+              <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">${fmt(autoDuty)} ₽</td></tr>
+          <tr><td style="padding:8px 6px; border-bottom:1px solid #e5e7eb;">Таможенный сбор</td>
+              <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">${fmt(autoCustomsFee)} ₽</td></tr>
+          <tr><td style="padding:8px 6px; border-bottom:2px solid #000;">Утилизационный сбор</td>
+              <td style="padding:8px 6px; text-align:right; border-bottom:2px solid #000;">${fmt(autoUtil)} ₽</td></tr>
+          <tr><td style="padding:8px 6px;"><strong>Итого «Пошлина и сборы»</strong></td>
+              <td style="padding:8px 6px; text-align:right;"><strong>${fmt(autoTotal)} ₽</strong></td></tr>
+          <tr><td style="padding:8px 6px;">Цена авто с пошлиной и сборами (RUB)</td>
+              <td style="padding:8px 6px; text-align:right;">${fmt(priceWithDutyRub)} ₽</td></tr>
+          <tr><td style="padding:8px 6px;">Таможенный брокер</td>
+              <td style="padding:8px 6px; text-align:right;">${fmt(brokerRub)} ₽</td></tr>
+          <tr><td style="padding:8px 6px; border-bottom:2px solid #000;">Доставка по России</td>
+              <td style="padding:8px 6px; text-align:right; border-bottom:2px solid #000;">${fmt(deliveryRub)} ₽</td></tr>
+          <tr><td style="padding:8px 6px;"><strong>Итого по России</strong></td>
+              <td style="padding:8px 6px; text-align:right;"><strong>${fmt(russiaSubtotal)} ₽</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+  `);
+
+  if (insuranceOn){
+    add(`
+      <div style="margin:10px 24px;">
+        <div style="font-weight:700; margin:6px 0;">Дополнительно</div>
+        <table style="width:100%; border-collapse:collapse; font-size:14px;">
+          <tbody>
+            <tr><td style="padding:8px 6px; border-bottom:2px solid #000;">Страховка (0,3%)</td>
+                <td style="padding:8px 6px; text-align:right; border-bottom:2px solid #000;">${fmt(insuranceRub)} ₽</td></tr>
+          </tbody>
+        </table>
+      </div>
+    `);
   }
 
-  // ===== Итог =====
-  const total = document.createElement('div');
-  total.style.cssText = 'margin:12px 24px 0;';
-  total.innerHTML = `
-    <div style="font-weight:700; margin:6px 0;">Итог</div>
-    <table style="width:100%; border-collapse:collapse; font-size:15px;">
-      <tbody>
-        <tr>
-          <td style="padding:10px 6px;"><strong>ПОД КЛЮЧ</strong></td>
-          <td style="padding:10px 6px; text-align:right;"><strong>${fmt(finalRub)} ₽</strong></td>
-        </tr>
-      </tbody>
-    </table>
-  `;
-  page.appendChild(total);
+  add(`
+    <div style="margin:12px 24px 0;">
+      <div style="font-weight:700; margin:6px 0;">Итог</div>
+      <table style="width:100%; border-collapse:collapse; font-size:15px;">
+        <tbody>
+          <tr>
+            <td style="padding:10px 6px;"><strong>ПОД КЛЮЧ</strong></td>
+            <td style="padding:10px 6px; text-align:right;"><strong>${fmt(finalRub)} ₽</strong></td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="font-size:11px; color:#555; margin:12px 24px 18px;">Источник расчёта: https://grizar94-hash.github.io/AutoCalc/</div>
+    </div>
+  `);
 
-  // нижняя подпись
-  const footer=document.createElement('div');
-  footer.style.cssText='font-size:11px; color:#555; margin:16px 24px 24px;';
-  footer.textContent='Источник расчёта: https://grizar94-hash.github.io/AutoCalc/';
-  page.appendChild(footer);
-
-  // рендер → PDF
   document.body.appendChild(page);
+
+  // Рендер → вписываем в один лист A4
   const canvas = await html2canvas(page, { scale:2, useCORS:true });
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF('p','pt','a4');
   const imgData = canvas.toDataURL('image/png');
-  const pdfW = pdf.internal.pageSize.getWidth();
-  const pdfH = canvas.height * (pdfW / canvas.width);
-  pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('p','pt','a4'); // портрет A4
+
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+
+  const imgW = canvas.width;
+  const imgH = canvas.height;
+
+  const scale = Math.min(pageW / imgW, pageH / imgH); // чтобы влезло по обоим измерениям
+  const drawW = imgW * scale;
+  const drawH = imgH * scale;
+  const x = (pageW - drawW) / 2;
+  const y = (pageH - drawH) / 2;
+
+  pdf.addImage(imgData, 'PNG', x, y, drawW, drawH);
   pdf.save('AutoCalc_Report.pdf');
+
   document.body.removeChild(page);
 }
 
 /* ===== init ===== */
 document.addEventListener('DOMContentLoaded', ()=>{
-  // источники курсов
   fetchUsdt(); fetchCbr();
 
-  // кнопка страховки (синхронизация со скрытым чекбоксом)
   const btn=$('insuranceBtn'), chk=$('insuranceCheck');
   btn.addEventListener('click', ()=>{
     btn.classList.toggle('active');
@@ -545,7 +518,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
     chk.checked = on;
   });
 
-  // реакция на ввод/переключатели
   document.querySelectorAll('input').forEach(el=>{
     if(el.type!=='radio' && el.type!=='checkbox') el.addEventListener('input', recompute);
   });

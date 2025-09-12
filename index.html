@@ -24,188 +24,339 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <style>
-  body {
-    font-family: 'Roboto', sans-serif;
-    background: #f0f2f5;
-    padding: 20px;
-    overflow-x: hidden;
+  :root { --blue:#0b69ff; --bg:#f0f2f5; --shadow:0 4px 10px rgba(0,0,0,.1); }
+  *{ box-sizing:border-box }
+  body{
+    font-family:'Roboto',system-ui,-apple-system,Segoe UI,Arial,sans-serif;
+    background:var(--bg); color:#111; margin:0; padding:20px; overflow-x:hidden;
   }
-  .wrap { max-width: 720px; margin: 0 auto; }
-  h2 { text-align: center; color: #0b69ff; margin-bottom: 20px; }
-  .section {
-    padding: 20px; margin-bottom: 15px; border-radius: 12px; color: #fff;
-    box-shadow: 0 4px 10px rgba(0,0,0,.1); transition: background .3s;
+  .wrap{ max-width:720px; margin:0 auto; }
+  h2{ text-align:center; color:var(--blue); margin:0 0 20px; }
+  .section{
+    padding:20px; margin-bottom:15px; border-radius:12px; color:#fff;
+    box-shadow:var(--shadow); transition:background .3s;
   }
-  .korea { background: #4fc3f7; }
-  .currency { background: #26a69a; }
-  .russia { background: #81c784; }
-  .section label { display: block; margin-top: 10px; font-weight: bold; }
-  input {
-    width: 100%; padding: 10px; margin-top: 5px; border-radius: 8px; border: none;
-    font-size: 16px;
+  .korea{ background:#4fc3f7 } .currency{ background:#26a69a } .russia{ background:#81c784 }
+  .section h3{ margin:0 0 6px }
+  .section label{ display:block; margin-top:10px; font-weight:700 }
+  input{
+    width:100%; padding:10px; margin-top:6px; border-radius:8px; border:none; font-size:16px;
   }
-  .insurance-row {
-    display: flex; align-items: center; gap: 10px;
-    margin: 12px 0 4px; background: #f7f7f8; border: 1px solid #e5e7eb;
-    border-radius: 10px; padding: 10px 12px; box-shadow: 0 4px 10px rgba(0,0,0,.1);
+  .insurance-row{
+    display:flex; align-items:center; gap:10px;
+    margin:12px 0 4px; background:#f7f7f8; border:1px solid #e5e7eb;
+    border-radius:10px; padding:10px 12px; box-shadow:var(--shadow);
   }
-  .insurance-row input { width: 20px; height: 20px; }
-  .insurance-row label { flex: 1; font-weight: 600; line-height: 1.3; }
-  button {
-    width: 100%; padding: 14px; margin-top: 15px; font-size: 18px;
-    border: none; border-radius: 10px; cursor: pointer;
-    background: #0b69ff; color: white; font-weight: bold;
-    transition: background 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,.1);
+  .insurance-row input{ width:20px; height:20px }
+  .insurance-row label{ flex:1; font-weight:600; line-height:1.3 }
+  button{
+    width:100%; padding:14px; margin-top:15px; font-size:18px; border:none; border-radius:10px;
+    cursor:pointer; background:var(--blue); color:#fff; font-weight:700; transition:.2s; box-shadow:var(--shadow);
   }
-  button:hover { background:#0756d1; }
-  button.clear { background:#ccc; color:#111; }
-  button.pdf { background:#0b69ff; color:#fff; }
-  .result {
-    margin-top: 20px; padding: 20px; border-radius: 12px;
-    background: #fff3e0; font-size: 18px; box-shadow: 0 4px 10px rgba(0,0,0,.1);
+  button:hover{ background:#0756d1 }
+  button.clear{ background:#ccc; color:#111 }
+  button.pdf{ background:#0b69ff; color:#fff } /* синяя кнопка PDF */
+
+  .result{
+    margin-top:20px; padding:20px; border-radius:12px; background:#fff3e0; font-size:18px; box-shadow:var(--shadow);
   }
-  .result p { margin: 10px 0; font-weight: bold; font-size: 18px; }
-  hr { border: 0; border-top: 2px dashed #ccc; margin: 10px 0; }
+  .result p{ margin:10px 0; font-weight:700 }
+  hr{ border:0; border-top:2px dashed #ccc; margin:10px 0 }
 </style>
 </head>
 <body>
 <main class="wrap">
 
-<h2>🚗 Калькулятор доставки авто из Кореи</h2>
+  <h2>🚗 Калькулятор доставки авто из Кореи</h2>
 
-<div class="section korea" id="blockKorea">
-  <h3>🇰🇷 Корея</h3>
-  <label>Цена авто (₩): <input type="number" id="priceKrw" placeholder="Введите цену авто"></label>
-  <label>Расходы в Корее включая фрахт (₩): <input type="number" id="expensesKrw" placeholder="Введите расходы"></label>
-</div>
+  <div class="section korea" id="blockKorea">
+    <h3>🇰🇷 Корея</h3>
+    <label>Цена авто (₩): <input type="number" id="priceKrw" placeholder="Введите цену авто"></label>
+    <label>Расходы в Корее включая фрахт (₩): <input type="number" id="expensesKrw" placeholder="Введите расходы"></label>
+  </div>
 
-<div class="section currency" id="blockCurrency">
-  <h3>💱 Курс валют</h3>
-  <label>USDT → ₽: <input type="number" id="rubUsdt" placeholder="Сколько рублей за 1 USDT" step="0.1"></label>
-  <label>USDT → ₩: <input type="number" id="usdtKrw" placeholder="Сколько вон за 1 USDT" step="0.1"></label>
-</div>
+  <div class="section currency" id="blockCurrency">
+    <h3>💱 Курс валют</h3>
+    <label>USDT → ₽: <input type="number" id="rubUsdt" placeholder="Сколько рублей за 1 USDT" step="0.01"></label>
+    <label>USDT → ₩: <input type="number" id="usdtKrw" placeholder="Сколько вон за 1 USDT" step="0.01"></label>
+  </div>
 
-<div class="section russia" id="blockRussia">
-  <h3>🇷🇺 Россия</h3>
-  <label>Пошлина и сборы (₽): <input type="number" id="dutyRub" placeholder="Например 150000"></label>
-  <label>Таможенное оформление и услуги брокера (₽): <input type="number" id="brokerRub" placeholder="Например 70000"></label>
-  <label>Доставка по России (₽): <input type="number" id="deliveryRub" placeholder="Например 50000"></label>
-</div>
+  <div class="section russia" id="blockRussia">
+    <h3>🇷🇺 Россия</h3>
+    <label>Пошлина и сборы (₽): <input type="number" id="dutyRub" placeholder="Например 150000"></label>
+    <label>Таможенное оформление и услуги брокера (₽): <input type="number" id="brokerRub" placeholder="Например 70000"></label>
+    <label>Доставка по России (₽): <input type="number" id="deliveryRub" placeholder="Например 50000"></label>
+  </div>
 
-<div class="insurance-row">
-  <input type="checkbox" id="insuranceCheck" />
-  <label for="insuranceCheck">Добавить страховку 0,3% от финальной суммы</label>
-</div>
+  <div class="insurance-row">
+    <input type="checkbox" id="insuranceCheck" />
+    <label for="insuranceCheck">Добавить страховку 0,3% от финальной суммы</label>
+  </div>
 
-<button onclick="calculate()">Рассчитать</button>
-<button class="clear" onclick="clearAll()">Очистить поля</button>
-<button class="pdf" onclick="downloadPDF()">📄 Скачать PDF-отчёт</button>
+  <button onclick="calculate()">Рассчитать</button>
+  <button class="clear" onclick="clearAll()">Очистить поля</button>
+  <button class="pdf" onclick="downloadPDF()">📄 Скачать PDF-отчёт</button>
 
-<div class="result" id="result"></div>
+  <div class="result" id="result"></div>
 </main>
 
 <script>
-// Анимация чисел
-function animateValue(id, start, end, duration) {
-  const el=document.getElementById(id); const rng=end-start; let t0=null;
-  function step(ts){ if(!t0) t0=ts; const p=Math.min(1,(ts-t0)/duration);
-    const v=Math.floor(start+rng*p);
-    el.textContent=v.toLocaleString('ru-RU')+' ₽';
-    if(p<1) requestAnimationFrame(step); else el.textContent=end.toLocaleString('ru-RU')+' ₽';
+  // Анимация чисел
+  function animateValue(id, start, end, duration){
+    const el=document.getElementById(id); const rng=end-start; let t0=null;
+    function step(ts){ if(!t0) t0=ts; const p=Math.min(1,(ts-t0)/duration);
+      const v=Math.floor(start + rng*p);
+      el.textContent = v.toLocaleString('ru-RU') + ' ₽';
+      if(p<1) requestAnimationFrame(step); else el.textContent = end.toLocaleString('ru-RU') + ' ₽';
+    }
+    requestAnimationFrame(step);
   }
-  requestAnimationFrame(step);
-}
 
-function calculate(){
-  const priceKrw=+document.getElementById('priceKrw').value||0;
-  const expensesKrw=+document.getElementById('expensesKrw').value||0;
-  const rubUsdt=+document.getElementById('rubUsdt').value||0;
-  const usdtKrw=+document.getElementById('usdtKrw').value||0;
-  const dutyRub=+document.getElementById('dutyRub').value||0;
-  const brokerRub=+document.getElementById('brokerRub').value||0;
-  const deliveryRub=+document.getElementById('deliveryRub').value||0;
-  const insuranceOn=document.getElementById('insuranceCheck').checked;
+  function calculate(){
+    const priceKrw=+document.getElementById('priceKrw').value||0;
+    const expensesKrw=+document.getElementById('expensesKrw').value||0;
+    const rubUsdt=+document.getElementById('rubUsdt').value||0;
+    const usdtKrw=+document.getElementById('usdtKrw').value||0;
+    const dutyRub=+document.getElementById('dutyRub').value||0;
+    const brokerRub=+document.getElementById('brokerRub').value||0;
+    const deliveryRub=+document.getElementById('deliveryRub').value||0;
+    const insuranceOn=document.getElementById('insuranceCheck').checked;
 
-  const totalKrw=priceKrw+expensesKrw;
-  const rubNeeded=usdtKrw?(totalKrw/usdtKrw)*rubUsdt:0;
-  const preFinal=rubNeeded+dutyRub+brokerRub+deliveryRub;
-  const insurance=insuranceOn?preFinal*0.003:0;
-  const finalSum=preFinal+insurance;
+    const koreaKrw = priceKrw + expensesKrw;                     // KRW
+    const rubNeeded = usdtKrw ? (koreaKrw / usdtKrw) * rubUsdt : 0; // RUB для покупки USDT
+    const russiaSubtotal = dutyRub + brokerRub + deliveryRub;    // RUB
+    const preFinal = rubNeeded + russiaSubtotal;                 // RUB
+    const insuranceRub = insuranceOn ? preFinal*0.003 : 0;       // RUB
+    const finalRub = preFinal + insuranceRub;                    // RUB
 
-  document.getElementById('blockKorea').style.background='#29b6f6';
-  document.getElementById('blockRussia').style.background='#66bb6a';
-  document.getElementById('result').style.background='#ffe0b2';
+    // визуальные акценты
+    document.getElementById('blockKorea').style.background='#29b6f6';
+    document.getElementById('blockRussia').style.background='#66bb6a';
+    document.getElementById('result').style.background='#ffe0b2';
 
-  document.getElementById('result').innerHTML=`
-    <p>💰 В Корее: <span id="valKorea">0 ₽</span></p>
-    <p>💰 В России: <span id="valRussia">0 ₽</span></p>
-    ${insuranceOn?`<p>🛡️ Страховка: <span id="valInsurance">0 ₽</span></p>`:''}
-    <hr>
-    <p>🏁 Под ключ: <span id="valFinal">0 ₽</span></p>
-  `;
+    document.getElementById('result').innerHTML = `
+      <p>💰 В Корее: <span id="valKorea">0 ₽</span></p>
+      <p>💰 В России: <span id="valRussia">0 ₽</span></p>
+      ${insuranceOn ? `<p>🛡️ Страховка: <span id="valInsurance">0 ₽</span></p>` : ''}
+      <hr>
+      <p>🏁 Под ключ: <span id="valFinal">0 ₽</span></p>
+    `;
+    animateValue('valKorea',0,Math.round(rubNeeded),900);
+    animateValue('valRussia',0,Math.round(russiaSubtotal),900);
+    if(insuranceOn) animateValue('valInsurance',0,Math.round(insuranceRub),900);
+    animateValue('valFinal',0,Math.round(finalRub),1100);
 
-  animateValue('valKorea',0,Math.round(rubNeeded),900);
-  animateValue('valRussia',0,Math.round(dutyRub+brokerRub+deliveryRub),900);
-  if(insuranceOn) animateValue('valInsurance',0,Math.round(insurance),900);
-  animateValue('valFinal',0,Math.round(finalSum),1100);
-}
-
-function clearAll(){
-  ['priceKrw','expensesKrw','rubUsdt','usdtKrw','dutyRub','brokerRub','deliveryRub']
-    .forEach(id=>document.getElementById(id).value='');
-  document.getElementById('insuranceCheck').checked=false;
-  document.getElementById('result').innerHTML='';
-  document.getElementById('blockKorea').style.background='#4fc3f7';
-  document.getElementById('blockRussia').style.background='#81c784';
-}
-
-// PDF генерация
-async function downloadPDF(){
-  const resBlock=document.getElementById('result');
-  if(!resBlock || !resBlock.innerText.trim()){
-    alert('Сначала выполните расчёт.');
-    return;
+    // сохраним для PDF (если понадобится)
+    window.__calc = { priceKrw, expensesKrw, rubUsdt, usdtKrw, dutyRub, brokerRub, deliveryRub,
+                      insuranceOn, koreaKrw, rubNeeded, russiaSubtotal, insuranceRub, finalRub };
   }
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit:'mm', format:'a4' });
 
-  const page=document.createElement('div');
-  page.style.cssText="position:fixed;left:-9999px;top:0;width:794px;background:#fff;color:#000;font-family:Arial;padding:20px;";
+  function clearAll(){
+    ['priceKrw','expensesKrw','rubUsdt','usdtKrw','dutyRub','brokerRub','deliveryRub']
+      .forEach(id=>document.getElementById(id).value='');
+    document.getElementById('insuranceCheck').checked=false;
+    document.getElementById('result').innerHTML='';
+    document.getElementById('blockKorea').style.background='#4fc3f7';
+    document.getElementById('blockRussia').style.background='#81c784';
+    window.__calc = null;
+  }
 
-  page.innerHTML=`
-    <div style="height:10px;background:#111;width:100%;margin-bottom:10px;"></div>
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
-      <img src="logo.png" style="height:60px;object-fit:contain;" />
-      <div style="text-align:right;font-size:12px;line-height:1.5;">
-        <strong>Harmex</strong><br>
-        사업자등록번호: 749-11-02981<br>
-        Tel: +82 10 3056 0903<br>
-        Email: annamoloz95@gmail.com<br>
-        Address: 201, 42 Hambak-ro84beon-gil,<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;Yeonsu-dong, Yeonsu-gu, Incheon, South Korea<br>
-        Director: Molozhavaia Anna
-      </div>
-    </div>
-    <h2 style="text-align:center;margin:0 0 10px;font-size:18px;">Отчёт по расчёту автомобиля из Кореи</h2>
-    <div style="text-align:center;font-size:12px;margin-bottom:12px;">Дата: ${new Date().toLocaleDateString('ru-RU')}</div>
-    <div style="border-top:1px solid #000;margin:10px 0;"></div>
-    <div style="font-size:14px;line-height:1.6;">${resBlock.innerText.replace(/\n/g,'<br>')}</div>
-  `;
+  // ===== PDF: строгая шапка + ТАБЛИЧНЫЙ отчёт (как согласовали) =====
+  function fmt(n, d=0){
+    if (!isFinite(n)) return '—';
+    const v = d ? Number(n).toFixed(d) : Math.round(n);
+    return Number(v).toLocaleString('ru-RU');
+  }
 
-  document.body.appendChild(page);
+  async function downloadPDF(){
+    // читаем актуальные значения из формы (на случай если не нажали "Рассчитать")
+    const val = id => +(document.getElementById(id).value || 0);
+    const insuranceOn = document.getElementById('insuranceCheck').checked;
 
-  const canvas=await html2canvas(page,{scale:2});
-  const imgData=canvas.toDataURL('image/png');
-  const pw=doc.internal.pageSize.getWidth();
-  const ph=doc.internal.pageSize.getHeight();
-  const ratio=canvas.height/canvas.width;
-  const ih=pw*ratio;
+    const priceKrw    = val('priceKrw');
+    const expensesKrw = val('expensesKrw');
+    const rubUsdt     = val('rubUsdt');
+    const usdtKrw     = val('usdtKrw');
+    const dutyRub     = val('dutyRub');
+    const brokerRub   = val('brokerRub');
+    const deliveryRub = val('deliveryRub');
 
-  doc.addImage(imgData,'PNG',0,0,pw,ih);
-  doc.save('calc-report.pdf');
+    const koreaKrw        = priceKrw + expensesKrw;
+    const rubNeeded       = usdtKrw ? (koreaKrw / usdtKrw) * rubUsdt : 0;
+    const russiaSubtotal  = dutyRub + brokerRub + deliveryRub;
+    const preFinal        = rubNeeded + russiaSubtotal;
+    const insuranceRub    = insuranceOn ? preFinal * 0.003 : 0;
+    const finalRub        = preFinal + insuranceRub;
 
-  document.body.removeChild(page);
-}
+    // временная страница под html2canvas
+    const page = document.createElement('div');
+    page.style.cssText = `
+      position:fixed; left:-99999px; top:0; width:794px; /* A4 @96dpi */
+      background:#fff; color:#000; font-family:-apple-system, system-ui, Segoe UI, Roboto, Arial, sans-serif;
+    `;
+
+    // тонкая чёрная полоса
+    const topBar = document.createElement('div');
+    topBar.style.cssText = 'height:10px;background:#000;width:100%;';
+    page.appendChild(topBar);
+
+    // шапка: логотип слева, контакты справа
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex;justify-content:space-between;align-items:flex-start;padding:18px 24px 0 24px;gap:16px;';
+
+    const logo = document.createElement('img');
+    const tryLarge = new Image();
+    tryLarge.src = 'logo_pdf.png';
+    await new Promise(r => { tryLarge.onload = r; tryLarge.onerror = r; });
+    logo.src = (tryLarge.complete && tryLarge.naturalWidth) ? 'logo_pdf.png' : 'logo.png';
+    logo.alt = 'Harmex';
+    logo.style.cssText = 'height:90px;object-fit:contain;';
+    header.appendChild(logo);
+
+    const contacts = document.createElement('div');
+    contacts.style.cssText = 'text-align:right; font-size:12px; line-height:1.5;';
+    contacts.innerHTML = `
+      <strong style="font-size:14px">Harmex</strong><br>
+      사업자등록번호: 749-11-02981<br>
+      Tel: +82 10 3056 0903<br>
+      Email: annamoloz95@gmail.com<br>
+      Address: 201, 42 Hambak-ro84beon-gil,<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;Yeonsu-dong, Yeonsu-gu, Incheon, South Korea<br>
+      Director: Molozhavaia Anna
+    `;
+    header.appendChild(contacts);
+    page.appendChild(header);
+
+    // заголовок (чёрный) + дата
+    const title = document.createElement('div');
+    title.textContent = 'Отчёт по расчёту автомобиля из Кореи';
+    title.style.cssText = 'text-align:center; font-weight:700; font-size:20px; color:#000; margin:16px 24px 4px;';
+    page.appendChild(title);
+
+    const date = document.createElement('div');
+    date.textContent = 'Дата: ' + new Date().toLocaleDateString('ru-RU');
+    date.style.cssText = 'text-align:center; font-size:12px; color:#222; margin-bottom:10px;';
+    page.appendChild(date);
+
+    // разделитель
+    const hr = document.createElement('div');
+    hr.style.cssText = 'height:1px;background:#000;margin:6px 24px 12px;';
+    page.appendChild(hr);
+
+    // ===== Таблица «Курсы валют» =====
+    const rates = document.createElement('div');
+    rates.style.cssText = 'margin:0 24px 10px;';
+    rates.innerHTML = `
+      <div style="font-weight:700; margin:6px 0;">Курсы валют</div>
+      <table style="width:100%; border-collapse:collapse; font-size:14px;">
+        <thead>
+          <tr>
+            <th style="text-align:left; border-bottom:2px solid #000; padding:8px 6px;">Пара</th>
+            <th style="text-align:right; border-bottom:2px solid #000; padding:8px 6px;">Курс</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td style="padding:8px 6px; border-bottom:1px solid #e5e7eb;">1 USDT → ₽</td>
+              <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">${fmt(rubUsdt,2)} ₽</td></tr>
+          <tr><td style="padding:8px 6px; border-bottom:1px solid #e5e7eb;">1 USDT → ₩</td>
+              <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">${fmt(usdtKrw,2)} ₩</td></tr>
+        </tbody>
+      </table>
+    `;
+    page.appendChild(rates);
+
+    // ===== «Корея» + «Сколько рублей подготовить…» =====
+    const kor = document.createElement('div');
+    kor.style.cssText = 'margin:10px 24px;';
+    kor.innerHTML = `
+      <div style="font-weight:700; margin:6px 0;">Корея</div>
+      <table style="width:100%; border-collapse:collapse; font-size:14px;">
+        <tbody>
+          <tr><td style="padding:8px 6px; border-bottom:1px solid #e5e7eb;">Цена авто (KRW)</td>
+              <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">${fmt(priceKrw)} ₩</td></tr>
+          <tr><td style="padding:8px 6px; border-bottom:1px solid #e5e7eb;">Расходы в Корее включая фрахт (KRW)</td>
+              <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">${fmt(expensesKrw)} ₩</td></tr>
+          <tr><td style="padding:8px 6px; border-bottom:2px solid #000;"><strong>Итого в Корее (KRW)</strong></td>
+              <td style="padding:8px 6px; text-align:right; border-bottom:2px solid #000;"><strong>${fmt(koreaKrw)} ₩</strong></td></tr>
+          <tr><td style="padding:8px 6px;"><strong>Сколько рублей подготовить для перевода USDT</strong></td>
+              <td style="padding:8px 6px; text-align:right;"><strong>${fmt(rubNeeded)} ₽</strong></td></tr>
+        </tbody>
+      </table>
+    `;
+    page.appendChild(kor);
+
+    // ===== «Россия» =====
+    const rus = document.createElement('div');
+    rus.style.cssText = 'margin:10px 24px;';
+    rus.innerHTML = `
+      <div style="font-weight:700; margin:6px 0;">Россия</div>
+      <table style="width:100%; border-collapse:collapse; font-size:14px;">
+        <tbody>
+          <tr><td style="padding:8px 6px; border-bottom:1px solid #e5e7eb;">Пошлина и сборы (RUB)</td>
+              <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">${fmt(dutyRub)} ₽</td></tr>
+          <tr><td style="padding:8px 6px; border-bottom:1px solid #e5e7eb;">Таможенное оформление и услуги брокера (RUB)</td>
+              <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">${fmt(brokerRub)} ₽</td></tr>
+          <tr><td style="padding:8px 6px; border-bottom:2px solid #000;">Доставка по России (RUB)</td>
+              <td style="padding:8px 6px; text-align:right; border-bottom:2px solid #000;">${fmt(deliveryRub)} ₽</td></tr>
+          <tr><td style="padding:8px 6px;"><strong>Итого по России</strong></td>
+              <td style="padding:8px 6px; text-align:right;"><strong>${fmt(russiaSubtotal)} ₽</strong></td></tr>
+        </tbody>
+      </table>
+    `;
+    page.appendChild(rus);
+
+    // ===== «Дополнительно» (страховка) если включено =====
+    if (insuranceOn){
+      const add = document.createElement('div');
+      add.style.cssText = 'margin:10px 24px;';
+      add.innerHTML = `
+        <div style="font-weight:700; margin:6px 0;">Дополнительно</div>
+        <table style="width:100%; border-collapse:collapse; font-size:14px;">
+          <tbody>
+            <tr><td style="padding:8px 6px; border-bottom:2px solid #000;">Страховка (0,3%)</td>
+                <td style="padding:8px 6px; text-align:right; border-bottom:2px solid #000;">${fmt(insuranceRub)} ₽</td></tr>
+          </tbody>
+        </table>
+      `;
+      page.appendChild(add);
+    }
+
+    // ===== Итог =====
+    const total = document.createElement('div');
+    total.style.cssText = 'margin:12px 24px 0;';
+    total.innerHTML = `
+      <div style="font-weight:700; margin:6px 0;">Итог</div>
+      <table style="width:100%; border-collapse:collapse; font-size:15px;">
+        <tbody>
+          <tr>
+            <td style="padding:10px 6px;"><strong>ПОД КЛЮЧ</strong></td>
+            <td style="padding:10px 6px; text-align:right;"><strong>${fmt(finalRub)} ₽</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    `;
+    page.appendChild(total);
+
+    // нижняя подпись
+    const footer=document.createElement('div');
+    footer.style.cssText='font-size:11px; color:#555; margin:16px 24px 24px;';
+    footer.textContent='Источник расчёта: https://grizar94-hash.github.io/AutoCalc/';
+    page.appendChild(footer);
+
+    document.body.appendChild(page);
+
+    // Рендер в PDF
+    const canvas = await html2canvas(page, { scale:2 });
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p','pt','a4');
+    const imgData = canvas.toDataURL('image/png');
+    const pdfW = pdf.internal.pageSize.getWidth();
+    const pdfH = canvas.height * (pdfW / canvas.width);
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
+    pdf.save('AutoCalc_Report.pdf');
+
+    document.body.removeChild(page);
+  }
 </script>
 </body>
 </html>

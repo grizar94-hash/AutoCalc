@@ -10,7 +10,7 @@
 <link rel="manifest" href="manifest.json" />
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
 
-<!-- PDF libs -->
+<!-- PDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
@@ -28,18 +28,23 @@
   .row{ display:flex; gap:10px; flex-wrap:wrap } .row>div{ flex:1 1 200px }
   .subpanel{ margin-top:12px; background:#f7f7f8; border:1px solid #e5e7eb; border-radius:10px; padding:12px; color:#111; }
   .subpanel h4{ margin:0 0 8px; font-size:16px; color:#0f172a }
-  .note{ font-size:12px; color:#475569; margin-top:4px }
+  .note{ font-size:12px; color:#475569; margin-top:6px }
   .muted{ color:#64748b; font-weight:600; font-size:12px }
   .auto-output{ background:#fff8e1 }
   .radio-line{ display:flex; gap:10px; flex-wrap:wrap; margin-top:6px }
   .radio-line label{ font-weight:600; color:#111; background:#e2e8f0; padding:6px 10px; border-radius:8px; cursor:pointer }
   .radio-line input{ width:auto; margin-right:6px }
   .grid{ display:grid; grid-template-columns: 1fr auto; gap:8px 10px; align-items:center }
-  .insurance-row{ display:flex; align-items:center; gap:10px; margin:12px 0 4px; background:#f7f7f8; border:1px solid #e5e7eb; border-radius:10px; padding:10px 12px; box-shadow:var(--shadow); color:#111; }
-  button{ width:100%; padding:14px; margin-top:15px; font-size:18px; border:none; border-radius:10px; cursor:pointer; background:var(--blue); color:#fff; font-weight:700; transition:.2s; box-shadow:var(--shadow); }
-  button:hover{ background:#0756d1 }
+
+  .toggle-btn, button{
+    width:100%; padding:14px; margin-top:15px; font-size:18px; border:none; border-radius:10px;
+    cursor:pointer; background:var(--blue); color:#fff; font-weight:700; transition:.2s; box-shadow:var(--shadow);
+  }
+  button:hover, .toggle-btn:hover{ background:#0756d1 }
+  .toggle-btn.active{ background:#0aa84f; }
   button.clear{ background:#ccc; color:#111 }
   .pdf{ background:#0b69ff; color:#fff }
+
   .result{ margin-top:20px; padding:20px; border-radius:12px; background:#fff3e0; font-size:18px; box-shadow:var(--shadow); }
   .result p{ margin:10px 0; font-weight:700 }
   hr{ border:0; border-top:2px dashed #ccc; margin:10px 0 }
@@ -52,14 +57,23 @@
   <!-- 1) КУРСЫ ВАЛЮТ -->
   <div class="section currency" id="blockCurrency">
     <h3>💱 Курс валют</h3>
+
     <div class="row">
       <div>
-        <label>USDT → ₽: <input type="number" id="rubUsdt" placeholder="авто" step="0.0001"></label>
+        <label>USDT → ₽:
+          <input type="number" id="rubUsdt" placeholder="авто" step="0.0001">
+        </label>
+        <div class="note" id="usdtSrc">Источник: —</div>
       </div>
+
       <div>
-        <label>USDT → ₩: <input type="number" id="usdtKrw" placeholder="авто" step="0.01"></label>
+        <label>USDT → ₩:
+          <input type="number" id="usdtKrw" placeholder="авто" step="0.01">
+        </label>
+        <div class="note" id="usdtSrc2">Источник: —</div>
       </div>
     </div>
+
     <div class="subpanel">
       <div class="grid">
         <div class="muted">Курс EUR → ₽ (ЦБ)</div>
@@ -67,7 +81,7 @@
         <div class="muted">Курс KRW → ₽ (ЦБ)</div>
         <input class="auto-output" id="krwRub" placeholder="авто" readonly>
       </div>
-      <div class="note">Курсы ЦБ используются для расчёта таможенной стоимости и €/см³. USDT-курсы — для перевода «корейской» суммы в рубли.</div>
+      <div class="note" id="cbrSrc">Курсы ЦБ РФ на —</div>
     </div>
   </div>
 
@@ -84,6 +98,7 @@
 
     <div class="subpanel" id="autoCustoms">
       <h4>⚙️ Авторасчёт пошлины и сборов</h4>
+
       <div class="row">
         <div>
           <div class="muted">Тип ввозящего</div>
@@ -150,24 +165,21 @@
     <label>Доставка по России (₽): <input type="number" id="deliveryRub" placeholder="например 50000"></label>
   </div>
 
-  <div class="insurance-row">
-    <input type="checkbox" id="insuranceCheck" />
-    <label for="insuranceCheck">Добавить страховку 0,3% от финальной суммы</label>
-  </div>
+  <!-- Страховка как кнопка -->
+  <button id="insuranceBtn" type="button" class="toggle-btn">Страховка 0,3%: выкл</button>
+  <input type="checkbox" id="insuranceCheck" hidden>
 
   <button onclick="calculate()">Рассчитать</button>
   <button class="clear" onclick="clearAll()">Очистить поля</button>
 
   <div class="result" id="result"></div>
 
-  <!-- PDF кнопка — В НИЗУ СТРАНИЦЫ -->
+  <!-- PDF — внизу -->
   <button class="pdf" onclick="downloadPDF()">📄 Скачать PDF-отчёт</button>
 </main>
 
 <script>
-/* ===== ставки (адаптированы под твой скрин) ===== */
-
-// ДВС: таблицы для физ/юр (ключевое — 3–5 лет, 1800–2300 см³ → 2.7 €/см³)
+/* ===== справочники ставок (укороченные, но реалистичные) ===== */
 const DUTY_INDIV = {
   "<3":[
     {min:0,max:1000,adval:0.48,spec:3.5},{min:1000,max:1500,adval:0.48,spec:3.5},
@@ -185,221 +197,180 @@ const DUTY_INDIV = {
     {min:2300,max:3000,adval:null,spec:5.0},{min:3000,max:3500,adval:null,spec:5.7},{min:3500,max:1e9,adval:null,spec:7.5}
   ]
 };
-const DUTY_BIZ = JSON.parse(JSON.stringify(DUTY_INDIV)); // для простоты ту же специфику
+const DUTY_BIZ = DUTY_INDIV; // если надо — отличим позднее
 
-// Таможенный сбор — обновил, чтобы ТС 1.2–2.5 млн → 11 746 ₽ (как на скрине).
-// Остальные диапазоны можно подогнать при следующем примере.
 const CUSTOMS_FEE = [
-  {max:200000, fee:1071},      // ~индексация базовых 775
-  {max:450000, fee:2142},      // ~1550
-  {max:1200000, fee:4284},     // ~3100
-  {max:2500000, fee:11746},    // точное из скрина
+  {max:200000, fee:1071},
+  {max:450000, fee:2142},
+  {max:1200000, fee:4284},
+  {max:2500000, fee:11746},   // как на скрине
   {max:5000000, fee:20000},
   {max:10000000, fee:30000},
   {max:1e12, fee:30000}
 ];
 
-// Утильсбор — для физлица 3–5 лет фикс 5200 ₽ (как на Drom на твоём кейсе).
-// Остальные оставил по классике, подгоним при необходимости.
-function utilFee({importer,isEV,ageKey,cc,kw}){
-  if(importer==='individual' && !isEV && ageKey==='>=3') return 5200;
-  if(importer==='individual' && !isEV && ageKey==='<3') return 3400; // 20 000 × 0.17 = 3 400
-  if(isEV){
-    return (ageKey==='<3') ? 3400 : 5200; // EV: 0.17 / 0.26 от базы 20 000
-  }
-  // fallback (юрлица и др.)
-  const base = (importer==='business') ? ((ageKey==='<3')?200000:150000) : ((ageKey==='<3')?20000:15000);
-  const k = (cc<=1000)?0.17:(cc<=2000)?0.34:(cc<=3000)?0.43:(cc<=3500)?0.86:1.34;
+/* ===== утилиты ===== */
+const $=id=>document.getElementById(id);
+const num=v=>(parseFloat(String(v).replace(/\s/g,'').replace(',','.')))||0;
+function pickRow(tbl,age,cc){ return tbl[age].find(r=>cc>r.min && cc<=r.max); }
+function dutyICE({table,age,cc,ts,eurRub}){ const r=pickRow(table,age,cc); const ad=r.adval?ts*r.adval:0; const sp=r.spec?cc*r.spec*eurRub:0; return Math.max(ad,sp); }
+function dutyEV(ts){ return ts*0.15; }
+function customsFee(ts){ return CUSTOMS_FEE.find(b=>ts<=b.max).fee; }
+// утиль: под твой кейс физ.лицо 3–5 лет = 5200 ₽, иначе простая сетка (можно расширить позже)
+function utilFee({importer,isEV,age,cc,kw}){
+  if(importer==='individual' && !isEV && age==='3-5') return 5200;
+  if(importer==='individual' && isEV) return age==='<3' ? 3400 : 5200;
+  // fallback (приближённо)
+  const base=(importer==='business')?(age==='<3'?200000:150000):(age==='<3'?20000:15000);
+  const k = isEV ? (kw<=85?0.17:0.26) : (cc<=1000?0.17:(cc<=2000?0.34:(cc<=3000?0.43:(cc<=3500?0.86:1.34))));
   return Math.round(base*k);
 }
 
-/* ===== утилиты ===== */
-const $=id=>document.getElementById(id);
-const n=v=>(parseFloat(String(v).replace(/\s/g,'').replace(',','.')))||0;
-
-function pickRow(tbl,age,cc){ return tbl[age].find(r=>cc>r.min && cc<=r.max); }
-function dutyICE({table,age,cc,ts,eurRub}){
-  const r=pickRow(table,age,cc); const ad = r.adval? ts*r.adval : 0; const sp = r.spec? cc*r.spec*eurRub : 0;
-  return Math.max(ad, sp);
-}
-function dutyEV(ts){ return ts*0.15; }
-
-function customsFee(ts){ return CUSTOMS_FEE.find(b=>ts<=b.max).fee; }
-
 /* ===== курсы ===== */
 async function fetchCbr(){
-  const r=await fetch('https://www.cbr-xml-daily.ru/daily_json.js'); const d=await r.json();
-  const EUR=d.Valute.EUR.Value/d.Valute.EUR.Nominal, KRW=d.Valute.KRW.Value/d.Valute.KRW.Nominal;
-  $('eurRub').value=EUR.toFixed(6); $('krwRub').value=KRW.toFixed(6);
+  const r = await fetch('https://www.cbr-xml-daily.ru/daily_json.js', {cache:'no-store'});
+  const d = await r.json();
+  const EUR = d.Valute.EUR.Value / d.Valute.EUR.Nominal;
+  const KRW = d.Valute.KRW.Value / d.Valute.KRW.Nominal;
+  $('eurRub').value = EUR.toFixed(6);
+  $('krwRub').value = KRW.toFixed(6);
+  const dt = new Date(d.Date);
+  $('cbrSrc').textContent = `Курсы ЦБ РФ на ${dt.toLocaleDateString('ru-RU')}`;
 }
 async function fetchUsdt(){
-  const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=rub,krw');
-  const j=await r.json(); $('rubUsdt').value=j.tether.rub.toFixed(4); $('usdtKrw').value=j.tether.krw.toFixed(2);
+  const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=rub,krw', {cache:'no-store'});
+  const j = await r.json();
+  $('rubUsdt').value = Number(j.tether.rub).toFixed(4);
+  $('usdtKrw').value = Number(j.tether.krw).toFixed(2);
+  const now = new Date().toLocaleString('ru-RU');
+  $('usdtSrc').textContent  = `Источник: CoinGecko • ${now}`;
+  $('usdtSrc2').textContent = `Источник: CoinGecko • ${now}`;
 }
 
-/* ===== авторасчёт таможни ===== */
+/* ===== управление UI ===== */
 function engineType(){ return document.querySelector('input[name="eng"]:checked').value; }
 function importer(){ return document.querySelector('input[name="importer"]:checked').value; }
 function ageRaw(){
-  return engineType()==='ev' ? document.querySelector('input[name="age_ev"]:checked').value
-                             : document.querySelector('input[name="age"]:checked').value;
+  return engineType()==='ev'
+    ? document.querySelector('input[name="age_ev"]:checked').value
+    : document.querySelector('input[name="age"]:checked').value;
 }
-function ageKey(a){ return a==='<3' ? '<3' : '>=3'; }
-
 function toggleEV(){
-  const ev=engineType()==='ev';
+  const ev = engineType()==='ev';
   $('paramsICE').style.display = ev ? 'none' : 'flex';
   $('paramsEV').style.display  = ev ? 'flex' : 'none';
 }
 
+/* ===== пересчёт авторасчёта пошлин ===== */
 function recompute(){
-  const eur=n($('eurRub').value), krw=n($('krwRub').value);
-  const priceKrw=n($('priceKrw').value), expensesKrw=n($('expensesKrw').value);
-  const ts = (priceKrw + expensesKrw) * krw; // таможенная стоимость
-  $('__tsRubHidden').value=Math.round(ts);
+  const eur=num($('eurRub').value), krw=num($('krwRub').value);
+  const priceKrw=num($('priceKrw').value), expKrw=num($('expensesKrw').value);
+  const ts = (priceKrw + expKrw) * krw; $('__tsRubHidden').value=Math.round(ts);
 
-  const imp=importer(); const ev=engineType()==='ev'; const age=ageRaw(); const akey=ageKey(age);
-
+  const imp=importer(), ev=engineType()==='ev', age=ageRaw();
   let duty=0, util=0;
   if(ev){
     duty = dutyEV(ts);
-    const kw=n($('motorKw').value);
-    util = utilFee({importer:imp,isEV:true,ageKey:akey,kw});
+    const kw=num($('motorKw').value);
+    util = utilFee({importer:imp,isEV:true,age,kw});
   }else{
-    const cc=n($('engineCc').value);
-    const table = (imp==='business')?DUTY_BIZ:DUTY_INDIV;
+    const cc=num($('engineCc').value);
+    const table=(imp==='business')?DUTY_BIZ:DUTY_INDIV;
     duty = dutyICE({table,age,cc,ts,eurRub:eur});
-    util = utilFee({importer:imp,isEV:false,ageKey:akey,cc});
+    util = utilFee({importer:imp,isEV:false,age,cc});
   }
-  const fee = customsFee(ts);
-  const total = Math.round(duty + fee + util);
-
+  const fee=customsFee(ts);
+  const total=Math.round(duty+fee+util);
   $('autoDuty').value=Math.round(duty);
   $('autoCustomsFee').value=Math.round(fee);
   $('autoUtil').value=Math.round(util);
   $('autoTotalCustoms').value=total;
 
-  // Цена авто с пошлиной и сборами: (только цена авто в KRW × KRW→RUB) + итого пошлина и сборы
-  const carPriceRub = priceKrw * krw;
+  const carPriceRub = priceKrw * krw; // ТОЛЬКО цена авто
   $('priceWithDutyRub').value = Math.round(carPriceRub + total);
 }
 
-/* ===== основной расчёт «под ключ» ===== */
+/* ===== основной расчёт ===== */
 function calculate(){
-  const rubUsdt=n($('rubUsdt').value), usdtKrw=n($('usdtKrw').value);
-  const priceKrw=n($('priceKrw').value), expensesKrw=n($('expensesKrw').value);
-  const autoTotal=n($('autoTotalCustoms').value), broker=n($('brokerRub').value), delivery=n($('deliveryRub').value);
+  const rubUsdt=num($('rubUsdt').value), usdtKrw=num($('usdtKrw').value);
+  const priceKrw=num($('priceKrw').value), expKrw=num($('expensesKrw').value);
+  const autoTotal=num($('autoTotalCustoms').value), broker=num($('brokerRub').value), delivery=num($('deliveryRub').value);
   const insuranceOn=$('insuranceCheck').checked;
 
-  const koreaKrw = priceKrw + expensesKrw;
-  const rubNeeded = usdtKrw? (koreaKrw/usdtKrw)*rubUsdt : 0;
-
+  const koreaKrw = priceKrw + expKrw;
+  const rubNeeded = usdtKrw ? (koreaKrw/usdtKrw)*rubUsdt : 0;
   const russiaSubtotal = autoTotal + broker + delivery;
   const preFinal = rubNeeded + russiaSubtotal;
   const insurance = insuranceOn ? preFinal*0.003 : 0;
   const finalRub = preFinal + insurance;
 
-  $('blockKorea').style.background='#29b6f6';
-  $('blockRussia').style.background='#66bb6a';
-  $('result').style.background='#ffe0b2';
-
   $('result').innerHTML = `
     <p>💰 В Корее: ${Math.round(rubNeeded).toLocaleString('ru-RU')} ₽</p>
     <p>💰 В России: ${Math.round(russiaSubtotal).toLocaleString('ru-RU')} ₽</p>
     ${insuranceOn ? `<p>🛡️ Страховка: ${Math.round(insurance).toLocaleString('ru-RU')} ₽</p>` : ''}
-    <hr>
-    <p>🏁 Под ключ: <strong>${Math.round(finalRub).toLocaleString('ru-RU')} ₽</strong></p>
-  `;
+    <hr><p>🏁 Под ключ: <strong>${Math.round(finalRub).toLocaleString('ru-RU')} ₽</strong></p>`;
 }
 
 function clearAll(){
-  document.querySelectorAll('input').forEach(i=>{ if(i.type!=='radio' && i.type!=='checkbox') i.value=''; });
+  document.querySelectorAll('input').forEach(i=>{
+    if(i.type!=='radio' && i.type!=='checkbox') i.value='';
+  });
   $('insuranceCheck').checked=false;
+  const btn=$('insuranceBtn'); btn.classList.remove('active'); btn.textContent='Страховка 0,3%: выкл';
   $('result').innerHTML='';
-  toggleEV(); recompute();
+  recompute();
 }
 
-/* ===== PDF ===== */
-function fmt(n,d=0){ if(!isFinite(n)) return '—'; const v=d?Number(n).toFixed(d):Math.round(n); return Number(v).toLocaleString('ru-RU'); }
-
+/* ===== PDF — надёжный снимок всей страницы ===== */
 async function downloadPDF(){
-  const v=id=>n($(id)?.value);
-  const priceKrw=v('priceKrw'), expensesKrw=v('expensesKrw'), rubUsdt=v('rubUsdt'), usdtKrw=v('usdtKrw');
-  const autoTotal=v('autoTotalCustoms'), broker=v('brokerRub'), delivery=v('deliveryRub');
-  const insuranceOn=$('insuranceCheck').checked;
+  const root = document.querySelector('.wrap');
+  if(!root){ alert('Не найден контент для PDF'); return; }
+  try{
+    const canvas = await html2canvas(root, {scale:2, useCORS:true, logging:false});
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p','pt','a4');
+    const pageW = pdf.internal.pageSize.getWidth();
+    const imgW  = pageW;
+    const imgH  = canvas.height * (imgW / canvas.width);
+    const imgData = canvas.toDataURL('image/png');
 
-  const koreaKrw=priceKrw+expensesKrw, rubNeeded=usdtKrw? (koreaKrw/usdtKrw)*rubUsdt : 0;
-  const russiaSubtotal=autoTotal+broker+delivery, preFinal=rubNeeded+russiaSubtotal;
-  const insurance=insuranceOn? preFinal*0.003 : 0, finalRub=preFinal+insurance;
-  const priceWithDutyRub=v('priceWithDutyRub');
-
-  const page=document.createElement('div');
-  page.style.cssText='position:fixed;left:-99999px;top:0;width:794px;background:#fff;color:#000;font-family:-apple-system,system-ui,Segoe UI,Roboto,Arial,sans-serif;';
-  const bar=document.createElement('div'); bar.style.cssText='height:10px;background:#000'; page.appendChild(bar);
-
-  const head=document.createElement('div'); head.style.cssText='display:flex;justify-content:space-between;align-items:flex-start;padding:18px 24px 0;gap:16px;';
-  const logo=new Image(); const tryLarge=new Image(); tryLarge.src='logo_pdf.png';
-  await new Promise(r=>{tryLarge.onload=r;tryLarge.onerror=r;});
-  logo.src=(tryLarge.complete&&tryLarge.naturalWidth)?'logo_pdf.png':'logo.png'; logo.style.cssText='height:90px;object-fit:contain;';
-  head.appendChild(logo);
-  const contact=document.createElement('div'); contact.style.cssText='text-align:right;font-size:12px;line-height:1.5;';
-  contact.innerHTML='<strong style="font-size:14px">Harmex</strong><br>사업자등록번호: 749-11-02981<br>Tel: +82 10 3056 0903<br>Email: annamoloz95@gmail.com<br>Address: 201, 42 Hambak-ro84beon-gil,<br>&nbsp;&nbsp;&nbsp;&nbsp;Yeonsu-dong, Yeonsu-gu, Incheon, South Korea<br>Director: Molozhavaia Anna';
-  head.appendChild(contact); page.appendChild(head);
-
-  const title=document.createElement('div'); title.textContent='Отчёт по расчёту автомобиля из Кореи';
-  title.style.cssText='text-align:center;font-weight:700;font-size:20px;margin:16px 24px 4px;'; page.appendChild(title);
-  const date=document.createElement('div'); date.textContent='Дата: '+new Date().toLocaleDateString('ru-RU');
-  date.style.cssText='text-align:center;font-size:12px;margin-bottom:10px;'; page.appendChild(date);
-  const hr=document.createElement('div'); hr.style.cssText='height:1px;background:#000;margin:6px 24px 12px;'; page.appendChild(hr);
-
-  const rates=document.createElement('div'); rates.style.cssText='margin:0 24px 10px;';
-  rates.innerHTML=`
-    <div style="font-weight:700;margin:6px 0;">Курсы валют</div>
-    <table style="width:100%;border-collapse:collapse;font-size:14px;">
-      <tr><td style="padding:8px 6px;border-bottom:1px solid #e5e7eb;">1 USDT → ₽</td><td style="padding:8px 6px;text-align:right;border-bottom:1px solid #e5e7eb;">${fmt(rubUsdt,4)} ₽</td></tr>
-      <tr><td style="padding:8px 6px;border-bottom:1px solid #e5e7eb;">1 USDT → ₩</td><td style="padding:8px 6px;text-align:right;border-bottom:1px solid #e5e7eb;">${fmt(usdtKrw,2)} ₩</td></tr>
-    </table>`; page.appendChild(rates);
-
-  const kor=document.createElement('div'); kor.style.cssText='margin:10px 24px;';
-  kor.innerHTML=`
-    <div style="font-weight:700;margin:6px 0;">Корея</div>
-    <table style="width:100%;border-collapse:collapse;font-size:14px;">
-      <tr><td style="padding:8px 6px;border-bottom:1px solid #e5e7eb;">Цена авто (KRW)</td><td style="padding:8px 6px;text-align:right;border-bottom:1px solid #e5e7eb;">${fmt(priceKrw)} ₩</td></tr>
-      <tr><td style="padding:8px 6px;border-bottom:1px solid #e5e7eb;">Расходы в Корее включая фрахт (KRW)</td><td style="padding:8px 6px;text-align:right;border-bottom:1px solid #e5e7eb;">${fmt(expensesKrw)} ₩</td></tr>
-      <tr><td style="padding:8px 6px;"><strong>Рубли для перевода USDT</strong></td><td style="padding:8px 6px;text-align:right;"><strong>${fmt(rubNeeded)} ₽</strong></td></tr>
-    </table>`; page.appendChild(kor);
-
-  const rus=document.createElement('div'); rus.style.cssText='margin:10px 24px;';
-  rus.innerHTML=`
-    <div style="font-weight:700;margin:6px 0;">Россия</div>
-    <table style="width:100%;border-collapse:collapse;font-size:14px;">
-      <tr><td style="padding:8px 6px;border-bottom:1px solid #e5e7eb;">Цена авто с пошлиной и сборами (RUB)</td><td style="padding:8px 6px;text-align:right;border-bottom:1px solid #e5e7eb;">${fmt(priceWithDutyRub)} ₽</td></tr>
-      <tr><td style="padding:8px 6px;border-bottom:1px solid #e5e7eb;">Итого «Пошлина и сборы»</td><td style="padding:8px 6px;text-align:right;border-bottom:1px solid #e5e7eb;">${fmt(autoTotalCustoms)} ₽</td></tr>
-      <tr><td style="padding:8px 6px;border-bottom:1px solid #e5e7eb;">Таможенный брокер</td><td style="padding:8px 6px;text-align:right;border-bottom:1px solid #e5e7eb;">${fmt(broker)} ₽</td></tr>
-      <tr><td style="padding:8px 6px;border-bottom:2px solid #000;">Доставка по России</td><td style="padding:8px 6px;text-align:right;border-bottom:2px solid #000;">${fmt(delivery)} ₽</td></tr>
-      <tr><td style="padding:8px 6px;"><strong>Итого по России</strong></td><td style="padding:8px 6px;text-align:right;"><strong>${fmt(russiaSubtotal)} ₽</strong></td></tr>
-    </table>`; page.appendChild(rus);
-
-  const fin=document.createElement('div'); fin.style.cssText='margin:12px 24px 0;';
-  fin.innerHTML=`<div style="font-weight:700;margin:6px 0;">Итог</div>
-    <table style="width:100%;border-collapse:collapse;font-size:15px;">
-      <tr><td style="padding:10px 6px;"><strong>ПОД КЛЮЧ</strong></td><td style="padding:10px 6px;text-align:right;"><strong>${fmt(finalRub)} ₽</strong></td></tr>
-    </table>`; page.appendChild(fin);
-
-  const canvas=await html2canvas(page,{scale:2}); const {jsPDF}=window.jspdf; const pdf=new jsPDF('p','pt','a4');
-  const img=canvas.toDataURL('image/png'); const w=pdf.internal.pageSize.getWidth(); const h=canvas.height*(w/canvas.width);
-  pdf.addImage(img,'PNG',0,0,w,h); pdf.save('AutoCalc_Report.pdf'); page.remove();
+    let hLeft = imgH, position = 0;
+    pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH);
+    hLeft -= pdf.internal.pageSize.getHeight();
+    while (hLeft > 0){
+      pdf.addPage();
+      position = - (imgH - hLeft);
+      pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH);
+      hLeft -= pdf.internal.pageSize.getHeight();
+    }
+    pdf.save('AutoCalc_Report.pdf');
+  }catch(e){
+    console.error(e);
+    alert('Не удалось сформировать PDF. Попробуйте ещё раз.');
+  }
 }
 
 /* ===== init ===== */
-document.addEventListener('DOMContentLoaded',()=>{
+document.addEventListener('DOMContentLoaded', ()=>{
+  // источники курсов
   fetchUsdt(); fetchCbr();
+
+  // кнопка страховки (синхронизация со скрытым чекбоксом)
+  const btn=$('insuranceBtn'), chk=$('insuranceCheck');
+  btn.addEventListener('click', ()=>{
+    btn.classList.toggle('active');
+    const on = btn.classList.contains('active');
+    btn.textContent = `Страховка 0,3%: ${on?'вкл':'выкл'}`;
+    chk.checked = on;
+  });
+
+  // реакция на ввод/переключатели
   document.querySelectorAll('input').forEach(el=>{
-    if(el.type!=='radio' && el.type!=='checkbox') el.addEventListener('input',recompute);
+    if(el.type!=='radio' && el.type!=='checkbox') el.addEventListener('input', recompute);
   });
-  document.querySelectorAll('input[name="importer"],input[name="eng"],input[name="age"],input[name="age_ev"]').forEach(el=>{
-    el.addEventListener('change',()=>{ toggleEV(); recompute(); });
-  });
+  document.querySelectorAll('input[name="importer"],input[name="eng"],input[name="age"],input[name="age_ev"]')
+    .forEach(el=>el.addEventListener('change', ()=>{ toggleEV(); recompute(); }));
+
   toggleEV(); recompute();
 });
 </script>

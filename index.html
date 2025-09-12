@@ -321,33 +321,222 @@ function clearAll(){
   recompute();
 }
 
-/* ===== PDF — надёжный снимок всей страницы ===== */
-async function downloadPDF(){
-  const root = document.querySelector('.wrap');
-  if(!root){ alert('Не найден контент для PDF'); return; }
-  try{
-    const canvas = await html2canvas(root, {scale:2, useCORS:true, logging:false});
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('p','pt','a4');
-    const pageW = pdf.internal.pageSize.getWidth();
-    const imgW  = pageW;
-    const imgH  = canvas.height * (imgW / canvas.width);
-    const imgData = canvas.toDataURL('image/png');
+// === ВСТАВЬ ЭТО ВМЕСТО ТЕКУЩИХ fmt() И downloadPDF() ===
+function fmt(n, d=0){
+  if (!isFinite(n)) return '—';
+  const v = d ? Number(n).toFixed(d) : Math.round(n);
+  return Number(v).toLocaleString('ru-RU');
+}
 
-    let hLeft = imgH, position = 0;
-    pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH);
-    hLeft -= pdf.internal.pageSize.getHeight();
-    while (hLeft > 0){
-      pdf.addPage();
-      position = - (imgH - hLeft);
-      pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH);
-      hLeft -= pdf.internal.pageSize.getHeight();
-    }
-    pdf.save('AutoCalc_Report.pdf');
-  }catch(e){
-    console.error(e);
-    alert('Не удалось сформировать PDF. Попробуйте ещё раз.');
+async function downloadPDF(){
+  // читаем актуальные значения из формы
+  const val = id => +(document.getElementById(id)?.value || 0);
+  const insuranceOn = document.getElementById('insuranceCheck')?.checked;
+
+  const priceKrw    = val('priceKrw');
+  const expensesKrw = val('expensesKrw');
+  const rubUsdt     = val('rubUsdt');
+  const usdtKrw     = val('usdtKrw');
+
+  const autoTotalCustoms = val('autoTotalCustoms');   // Итого «Пошлина и сборы»
+  const brokerRub   = val('brokerRub');
+  const deliveryRub = val('deliveryRub');
+
+  const koreaKrw        = priceKrw + expensesKrw;
+  const rubNeeded       = usdtKrw ? (koreaKrw / usdtKrw) * rubUsdt : 0;
+
+  const russiaSubtotal  = autoTotalCustoms + brokerRub + deliveryRub;
+  const preFinal        = rubNeeded + russiaSubtotal;
+  const insuranceRub    = insuranceOn ? preFinal * 0.003 : 0;
+  const finalRub        = preFinal + insuranceRub;
+
+  const priceWithDutyRub = val('priceWithDutyRub'); // «Цена авто с пошлиной и сборами (₽)»
+
+  // ===== Строим «красивую» страницу для рендера =====
+  const page = document.createElement('div');
+  page.style.cssText = `
+    position:fixed; left:-99999px; top:0; width:794px; /* A4 @96dpi */
+    background:#fff; color:#000; font-family:-apple-system, system-ui, Segoe UI, Roboto, Arial, sans-serif;
+  `;
+
+  // тонкая чёрная полоса сверху
+  const topBar = document.createElement('div');
+  topBar.style.cssText = 'height:10px;background:#000;width:100%;';
+  page.appendChild(topBar);
+
+  // шапка: логотип + реквизиты
+  const header = document.createElement('div');
+  header.style.cssText = 'display:flex;justify-content:space-between;align-items:flex-start;padding:18px 24px 0 24px;gap:16px;';
+
+  const logo = document.createElement('img');
+  const tryLarge = new Image();
+  tryLarge.src = 'logo_pdf.png'; // если нет, упадём на logo.png
+  await new Promise(r => { tryLarge.onload = r; tryLarge.onerror = r; });
+  logo.src = (tryLarge.complete && tryLarge.naturalWidth) ? 'logo_pdf.png' : 'logo.png';
+  logo.alt = 'Harmex';
+  logo.style.cssText = 'height:90px;object-fit:contain;';
+  header.appendChild(logo);
+
+  const contacts = document.createElement('div');
+  contacts.style.cssText = 'text-align:right; font-size:12px; line-height:1.5;';
+  contacts.innerHTML = `
+    <strong style="font-size:14px">Harmex</strong><br>
+    사업자등록번호: 749-11-02981<br>
+    Tel: +82 10 3056 0903<br>
+    Email: annamoloz95@gmail.com<br>
+    Address: 201, 42 Hambak-ro84beon-gil,<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Yeonsu-dong, Yeonsu-gu, Incheon, South Korea<br>
+    Director: Molozhavaia Anna
+  `;
+  header.appendChild(contacts);
+  page.appendChild(header);
+
+  // заголовок + дата
+  const title = document.createElement('div');
+  title.textContent = 'Отчёт по расчёту автомобиля из Кореи';
+  title.style.cssText = 'text-align:center; font-weight:700; font-size:20px; color:#000; margin:16px 24px 4px;';
+  page.appendChild(title);
+
+  const date = document.createElement('div');
+  date.textContent = 'Дата: ' + new Date().toLocaleDateString('ru-RU');
+  date.style.cssText = 'text-align:center; font-size:12px; color:#222; margin-bottom:10px;';
+  page.appendChild(date);
+
+  const hr = document.createElement('div');
+  hr.style.cssText = 'height:1px;background:#000;margin:6px 24px 12px;';
+  page.appendChild(hr);
+
+  // ===== Таблица «Курсы валют» =====
+  const rates = document.createElement('div');
+  rates.style.cssText = 'margin:0 24px 10px;';
+  rates.innerHTML = `
+    <div style="font-weight:700; margin:6px 0;">Курсы валют</div>
+    <table style="width:100%; border-collapse:collapse; font-size:14px;">
+      <thead>
+        <tr>
+          <th style="text-align:left; border-bottom:2px solid #000; padding:8px 6px;">Пара</th>
+          <th style="text-align:right; border-bottom:2px solid #000; padding:8px 6px;">Курс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td style="padding:8px 6px; border-bottom:1px solid #e5e7eb;">1 USDT → ₽</td>
+            <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">${fmt(rubUsdt,4)} ₽</td></tr>
+        <tr><td style="padding:8px 6px; border-bottom:1px solid #e5e7eb;">1 USDT → ₩</td>
+            <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">${fmt(usdtKrw,2)} ₩</td></tr>
+      </tbody>
+    </table>
+  `;
+  page.appendChild(rates);
+
+  // ===== «Корея» =====
+  const kor = document.createElement('div');
+  kor.style.cssText = 'margin:10px 24px;';
+  kor.innerHTML = `
+    <div style="font-weight:700; margin:6px 0;">Корея</div>
+    <table style="width:100%; border-collapse:collapse; font-size:14px;">
+      <tbody>
+        <tr><td style="padding:8px 6px; border-bottom:1px solid #e5e7eb;">Цена авто (KRW)</td>
+            <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">${fmt(priceKrw)} ₩</td></tr>
+        <tr>
+  <td style="padding:8px 6px; border-bottom:1px solid #e5e7eb;">
+    Расходы в Корее (автоподбор, комиссия диллера, экспортные документы)<br>
+    Автовоз до порта, фрахт до Владивостока (KRW)
+  </td>
+  <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">
+    ${fmt(expensesKrw)} ₩
+  </td>
+</tr>
+        <tr><td style="padding:8px 6px; border-bottom:2px solid #000;"><strong>Итого в Корее (KRW)</strong></td>
+            <td style="padding:8px 6px; text-align:right; border-bottom:2px solid #000;"><strong>${fmt(koreaKrw)} ₩</strong></td></tr>
+        <tr><td style="padding:8px 6px;"><strong>Сколько рублей подготовить для перевода USDT</strong></td>
+            <td style="padding:8px 6px; text-align:right;"><strong>${fmt(rubNeeded)} ₽</strong></td></tr>
+      </tbody>
+    </table>
+  `;
+  page.appendChild(kor);
+
+  // ===== «Россия» =====
+  const rus = document.createElement('div');
+  rus.style.cssText = 'margin:10px 24px;';
+  rus.innerHTML = `
+    <div style="font-weight:700; margin:6px 0;">Россия</div>
+    <table style="width:100%; border-collapse:collapse; font-size:14px;">
+      <tbody>
+        <tr><td style="padding:8px 6px; border-bottom:1px solid #e5e7eb;">Цена авто с пошлиной и сборами (RUB)</td>
+            <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">${fmt(priceWithDutyRub)} ₽</td></tr>
+        <tr><td style="padding:8px 6px; border-bottom:1px solid #e5e7eb;">Итого «Пошлина и сборы» (RUB)</td>
+            <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">${fmt(autoTotalCustoms)} ₽</td></tr>
+       <tr>
+  <td style="padding:8px 6px; border-bottom:1px solid #e5e7eb;">
+    Таможенное оформление, СБКТС, ЭПТС, РПП и СВХ,<br>
+    экспертиза, услуги брокера (RUB)
+  </td>
+  <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">
+    ${fmt(brokerRub)} ₽
+  </td>
+</tr>
+            <td style="padding:8px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">${fmt(brokerRub)} ₽</td></tr>
+        <tr><td style="padding:8px 6px; border-bottom:2px solid #000;">Доставка по России (RUB)</td>
+            <td style="padding:8px 6px; text-align:right; border-bottom:2px solid #000;">${fmt(deliveryRub)} ₽</td></tr>
+        <tr><td style="padding:8px 6px;"><strong>Итого по России</strong></td>
+            <td style="padding:8px 6px; text-align:right;"><strong>${fmt(russiaSubtotal)} ₽</strong></td></tr>
+      </tbody>
+    </table>
+  `;
+  page.appendChild(rus);
+
+  // ===== Дополнительно (страховка) =====
+  if (insuranceOn){
+    const add = document.createElement('div');
+    add.style.cssText = 'margin:10px 24px;';
+    add.innerHTML = `
+      <div style="font-weight:700; margin:6px 0;">Дополнительно</div>
+      <table style="width:100%; border-collapse:collapse; font-size:14px;">
+        <tbody>
+          <tr><td style="padding:8px 6px; border-bottom:2px solid #000;">Страховка (0,3%)</td>
+              <td style="padding:8px 6px; text-align:right; border-bottom:2px solid #000;">${fmt(insuranceRub)} ₽</td></tr>
+        </tbody>
+      </table>
+    `;
+    page.appendChild(add);
   }
+
+  // ===== Итог =====
+  const total = document.createElement('div');
+  total.style.cssText = 'margin:12px 24px 0;';
+  total.innerHTML = `
+    <div style="font-weight:700; margin:6px 0;">Итог</div>
+    <table style="width:100%; border-collapse:collapse; font-size:15px;">
+      <tbody>
+        <tr>
+          <td style="padding:10px 6px;"><strong>ПОД КЛЮЧ</strong></td>
+          <td style="padding:10px 6px; text-align:right;"><strong>${fmt(finalRub)} ₽</strong></td>
+        </tr>
+      </tbody>
+    </table>
+  `;
+  page.appendChild(total);
+
+  // подпись снизу
+  const footer=document.createElement('div');
+  footer.style.cssText='font-size:11px; color:#555; margin:16px 24px 24px;';
+  footer.textContent='Источник расчёта: https://grizar94-hash.github.io/AutoCalc/';
+  page.appendChild(footer);
+
+  document.body.appendChild(page);
+
+  // Рендер в PDF
+  const canvas = await html2canvas(page, { scale:2 });
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('p','pt','a4');
+  const imgData = canvas.toDataURL('image/png');
+  const pdfW = pdf.internal.pageSize.getWidth();
+  const pdfH = canvas.height * (pdfW / canvas.width);
+  pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
+  pdf.save('AutoCalc_Report.pdf');
+
+  document.body.removeChild(page);
+}
 }
 
 /* ===== init ===== */

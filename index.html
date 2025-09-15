@@ -49,7 +49,7 @@
   html,body{ height:100% }
   html{
     background:var(--bg);
-    overscroll-behavior: none; /* убираем синий фон iOS при резиновом скролле */
+    overscroll-behavior: none; /* убираем синий фон при оверскролле */
   }
   body{
     font-family:'Inter','Roboto','Segoe UI',Arial,sans-serif;
@@ -58,7 +58,7 @@
     background:transparent; /* фон переносим на html::before */
   }
 
-  /* Фон — исправленный селектор */
+  /* Фон — работает и на iOS */
   html::before{
     content:""; position:fixed; inset:0; pointer-events:none; z-index:-1;
     opacity:var(--bg-img-opacity); filter:grayscale(100%);
@@ -137,6 +137,10 @@
   .result p{ margin:10px 0; font-weight:600 }
   hr{ border:0; border-top:1px solid var(--border); margin:12px 0 }
   .auto-output{ background:var(--panel) }
+
+  /* маленькая кнопка в заголовке секции */
+  .header-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  button.mini{width:auto;padding:8px 10px;font-size:13px}
 </style>
 </head>
 <body>
@@ -165,7 +169,10 @@
 
   <!-- 1) КУРСЫ ВАЛЮТ -->
   <div class="section" id="blockCurrency">
-    <h3>Курсы валют</h3>
+    <div class="header-row">
+      <h3>Курсы валют</h3>
+      <button id="refreshRates" type="button" class="mini">Обновить</button>
+    </div>
 
     <div class="row">
       <div>
@@ -285,7 +292,7 @@
 </main>
 
 <script>
-/* ===== ставки (обновлённые) ===== */
+/* ===== ставки пошлин (ДВС) ===== */
 const DUTY_INDIV = {
   "<3":[
     {min:0,max:1000,adval:0.48,spec:3.5},{min:1000,max:1500,adval:0.48,spec:3.5},
@@ -317,7 +324,7 @@ const CUSTOMS_FEE = [
   {max:1e12,    fee:30000}
 ];
 
-/* ===== утилиты ===== */
+/* ===== утилы ===== */
 const $=id=>document.getElementById(id);
 const stripToDigits = v => String(v ?? '').replace(/\D/g,'');
 const rawNumber = v => String(v ?? '').replace(/[^\d.,-]/g,'').replace(/\s/g,'').replace(',','.');
@@ -340,23 +347,21 @@ function liveIntegerSpaces(el){
 function pickRow(tbl,age,cc){ return tbl[age].find(r=>cc>r.min && cc<=r.max); }
 function dutyICE({table,age,cc,ts,eurRub}){
   const r=pickRow(table,age,cc);
-  if(!r) return 0; /* защита при пустом объёме */
+  if(!r) return 0;
   const ad=r.adval?ts*r.adval:0; const sp=r.spec?cc*r.spec*eurRub:0; return Math.max(ad,sp);
 }
 function dutyEV(ts){ return ts*0.15; }
 function customsFee(ts){ return CUSTOMS_FEE.find(b=>ts<=b.max).fee; }
 
 /* === Утильсбор 2025 ===
-   individual (льготный): 3400 / 5200
-   business/ИП: фиксированные суммы по таблице (ДВС и ЭВ) */
+   ФИЗ: льготный 3400/5200.
+   ЮЛ/ИП: фикс-суммы по таблице (ЭВ и ДВС). */
 function utilFee({importer,isEV,age,cc,kw}){
   if (importer==='individual'){
-    // льготный утильсбор (по ПТД)
     return (age === '<3') ? 3400 : 5200;
   }
-
-  // Юрлица/ИП
-  const older = (age === '>=3' || age === '>5'); // для ДВС берём колонку "старше 3 лет"
+  // ЮЛ/ИП
+  const older = (age === '>=3' || age === '>5' || age === '3-5'); // «старше 3» для ЭВ; для ДВС твои градации >3 тоже считаем "older"
   if (isEV){
     return older ? 1174000 : 667400;
   }
@@ -369,16 +374,12 @@ function utilFee({importer,isEV,age,cc,kw}){
 }
 
 /* ===== курсы ===== */
-/* ===== курсы ЦБ — без кэша и с корректной датой ===== */
 async function fetchCbr(){
   try{
-    const url = 'https://www.cbr-xml-daily.ru/daily_json.js?_=' + Date.now(); // пробой кэша
+    const url = 'https://www.cbr-xml-daily.ru/daily_json.js?_=' + Date.now();
     const r = await fetch(url, {
       cache: 'no-store',
-      headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate',
-        'Pragma': 'no-cache',
-      }
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate','Pragma': 'no-cache' }
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
@@ -386,7 +387,6 @@ async function fetchCbr(){
     const EUR = d?.Valute?.EUR ? d.Valute.EUR.Value / d.Valute.EUR.Nominal : NaN;
     const KRW = d?.Valute?.KRW ? d.Valute.KRW.Value / d.Valute.KRW.Nominal : NaN;
 
-    // показываем 6 знаков, чтобы KRW→₽ не "обнулялось"
     $('eurRub').value = isFinite(EUR) ? fmtSpaces(EUR, 6) : '';
     $('krwRub').value = isFinite(KRW) ? fmtSpaces(KRW, 6) : '';
 
@@ -396,6 +396,20 @@ async function fetchCbr(){
   }catch(e){
     console.error('CBR error:', e);
     $('cbrSrc').textContent = 'Курсы ЦБ РФ: ошибка загрузки';
+  }
+}
+async function fetchUsdt(){
+  try{
+    const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=rub,krw&_=' + Date.now(), {cache:'no-store'});
+    const j = await r.json();
+    $('rubUsdt').value = fmtSpaces(Number(j.tether.rub),4);
+    $('usdtKrw').value = fmtSpaces(Number(j.tether.krw),2);
+    const now = new Date().toLocaleString('ru-RU');
+    $('usdtSrc').textContent  = `Источник: CoinGecko • ${now}`;
+    $('usdtSrc2').textContent = `Источник: CoinGecko • ${now}`;
+  }catch(e){
+    $('usdtSrc').textContent='Источник: ошибка загрузки';
+    $('usdtSrc2').textContent='Источник: ошибка загрузки';
   }
 }
 
@@ -470,8 +484,6 @@ function fmt(n,d=0){
   const v = d ? Number(n).toFixed(d) : Math.round(n);
   return fmtSpaces(Number(v), d);
 }
-
-// НЕРАЗРЫВНЫЙ пробел + количество знаков
 const nowrap = (val, sym, d = 0) =>
   `<span style="white-space:nowrap;">${fmt(val, d)}&nbsp;${sym}</span>`;
 
@@ -541,40 +553,28 @@ async function downloadPDF(){
     const tdL = `style="padding:8px 6px;border-bottom:1px solid #e5e7eb;text-align:left"`;
     const tdR = `style="padding:8px 6px;border-bottom:1px solid #e5e7eb;text-align:right"`;
     const tdRbold = `style="padding:8px 6px;text-align:right"`;
-    const sep = `style="height:1px;background:#000;margin:6px 24px 12px;"`;
 
     /* Курсы */
-add(`
-  <div style="margin:0 24px 10px;">
-    <div style="font-weight:700; margin:6px 0;">Курсы валют</div>
-    <table style="width:100%; border-collapse:collapse; font-size:14px;">
-      <thead>
-        <tr>
-          <th ${tblHead}>Пара</th>
-          <th ${tblHead.replace('left','right')}>Курс</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td ${tdL}>1 USDT → ₽</td>
-          <td ${tdR}>${nowrap(rubUsdt, '₽', 4)}</td>
-        </tr>
-        <tr>
-          <td ${tdL}>1 USDT → ₩</td>
-          <td ${tdR}>${nowrap(usdtKrw, '₩', 2)}</td>
-        </tr>
-        <tr>
-          <td ${tdL}>1 EUR → ₽ (ЦБ)</td>
-          <td ${tdR}>${nowrap(eurRub, '₽', 6)}</td>
-        </tr>
-        <tr>
-          <td ${tdL.replace('border-bottom:1px solid #e5e7eb','border-bottom:0')}>1 KRW → ₽ (ЦБ)</td>
-          <td ${tdR.replace('border-bottom:1px solid #e5e7eb','border-bottom:0')}>${nowrap(krwRub, '₽', 6)}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-`);
+    add(`
+      <div style="margin:0 24px 10px;">
+        <div style="font-weight:700; margin:6px 0;">Курсы валют</div>
+        <table style="width:100%; border-collapse:collapse; font-size:14px;">
+          <thead>
+            <tr>
+              <th ${tblHead}>Пара</th>
+              <th ${tblHead.replace('left','right')}>Курс</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td ${tdL}>1 USDT → ₽</td><td ${tdR}>${nowrap(rubUsdt,'₽',4)}</td></tr>
+            <tr><td ${tdL}>1 USDT → ₩</td><td ${tdR}>${nowrap(usdtKrw,'₩',2)}</td></tr>
+            <tr><td ${tdL}>1 EUR → ₽ (ЦБ)</td><td ${tdR}>${nowrap(eurRub,'₽',6)}</td></tr>
+            <tr><td ${tdL.replace('border-bottom:1px solid #e5e7eb','border-bottom:0')}>1 KRW → ₽ (ЦБ)</td>
+                <td ${tdR.replace('border-bottom:1px solid #e5e7eb','border-bottom:0')}>${nowrap(krwRub,'₽',6)}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    `);
 
     /* Корея */
     add(`
@@ -696,7 +696,11 @@ document.addEventListener('DOMContentLoaded', ()=>{
   });
 
   // Автокурсы
-  fetchUsdt(); fetchCbr();
+  const refreshBtn = $('refreshRates');
+  const setRefreshing = on => { if(refreshBtn){ refreshBtn.disabled=on; refreshBtn.textContent=on?'Обновляю…':'Обновить'; }};
+  const refreshAll = async ()=>{ setRefreshing(true); try{ await Promise.all([fetchUsdt(), fetchCbr()]); } finally{ setRefreshing(false); } };
+  if (refreshBtn){ refreshBtn.addEventListener('click', refreshAll); }
+  refreshAll();
 
   // Кнопки
   insuranceBtn.addEventListener('click', ()=>{
@@ -717,7 +721,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   });
   pdfBtn.addEventListener('click', downloadPDF);
 
-  /* Живое форматирование */
+  /* Живое форматирование для целых полей */
   ['priceKrw','expensesKrw','engineCc','motorKw','brokerRub','deliveryRub']
     .forEach(id => liveIntegerSpaces($(id)));
 

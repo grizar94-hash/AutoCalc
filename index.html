@@ -373,23 +373,24 @@ function utilFee({importer,isEV,age,cc,kw}){
   return older ? 3604800 : 2742200;
 }
 
-/* ===== курсы ===== */
+/* ===== КУРСЫ ЦБ РФ — актуальные, с пробоем кэша ===== */
 async function fetchCbr(){
   try{
-    const url = 'https://www.cbr-xml-daily.ru/daily_json.js?_=' + Date.now();
-    const r = await fetch(url, {
-      cache: 'no-store',
-      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate','Pragma': 'no-cache' }
+    // cache-buster + запрет кеширования на стороне браузера
+    const r = await fetch('https://www.cbr-xml-daily.ru/daily_json.js?_=' + Date.now(), {
+      cache: 'no-store'   // достаточно, лишние заголовки не нужны
     });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
+    if(!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
 
+    // EUR/KRW → ₽ (дробные, чтобы KRW не «обнулялся»)
     const EUR = d?.Valute?.EUR ? d.Valute.EUR.Value / d.Valute.EUR.Nominal : NaN;
     const KRW = d?.Valute?.KRW ? d.Valute.KRW.Value / d.Valute.KRW.Nominal : NaN;
 
     $('eurRub').value = isFinite(EUR) ? fmtSpaces(EUR, 6) : '';
     $('krwRub').value = isFinite(KRW) ? fmtSpaces(KRW, 6) : '';
 
+    // Подпись с датой бюллетеня ЦБ
     const dt = new Date(d.Date);
     const prev = new Date(d.PreviousDate);
     $('cbrSrc').textContent = `Курсы ЦБ РФ на ${dt.toLocaleDateString('ru-RU')} (пред.: ${prev.toLocaleDateString('ru-RU')})`;
@@ -398,6 +399,7 @@ async function fetchCbr(){
     $('cbrSrc').textContent = 'Курсы ЦБ РФ: ошибка загрузки';
   }
 }
+
 async function fetchUsdt(){
   try{
     const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=rub,krw&_=' + Date.now(), {cache:'no-store'});

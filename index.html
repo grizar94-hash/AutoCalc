@@ -369,30 +369,33 @@ function utilFee({importer,isEV,age,cc,kw}){
 }
 
 /* ===== курсы ===== */
+/* ===== курсы ЦБ — без кэша и с корректной датой ===== */
 async function fetchCbr(){
   try{
-    const r = await fetch('https://www.cbr-xml-daily.ru/daily_json.js', {cache:'no-store'});
+    const url = 'https://www.cbr-xml-daily.ru/daily_json.js?_=' + Date.now(); // пробой кэша
+    const r = await fetch(url, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Pragma': 'no-cache',
+      }
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
-    const EUR = d.Valute.EUR.Value / d.Valute.EUR.Nominal;
-    const KRW = d.Valute.KRW.Value / d.Valute.KRW.Nominal;
-    $('eurRub').value = fmtSpaces(EUR,6);
-    $('krwRub').value = fmtSpaces(KRW,6);
+
+    const EUR = d?.Valute?.EUR ? d.Valute.EUR.Value / d.Valute.EUR.Nominal : NaN;
+    const KRW = d?.Valute?.KRW ? d.Valute.KRW.Value / d.Valute.KRW.Nominal : NaN;
+
+    // показываем 6 знаков, чтобы KRW→₽ не "обнулялось"
+    $('eurRub').value = isFinite(EUR) ? fmtSpaces(EUR, 6) : '';
+    $('krwRub').value = isFinite(KRW) ? fmtSpaces(KRW, 6) : '';
+
     const dt = new Date(d.Date);
-    $('cbrSrc').textContent = `Курсы ЦБ РФ на ${dt.toLocaleDateString('ru-RU')}`;
-  }catch(e){ $('cbrSrc').textContent='Курсы ЦБ РФ: ошибка загрузки'; }
-}
-async function fetchUsdt(){
-  try{
-    const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=rub,krw', {cache:'no-store'});
-    const j = await r.json();
-    $('rubUsdt').value = fmtSpaces(Number(j.tether.rub),4);
-    $('usdtKrw').value = fmtSpaces(Number(j.tether.krw),2);
-    const now = new Date().toLocaleString('ru-RU');
-    $('usdtSrc').textContent  = `Источник: CoinGecko • ${now}`;
-    $('usdtSrc2').textContent = `Источник: CoinGecko • ${now}`;
+    const prev = new Date(d.PreviousDate);
+    $('cbrSrc').textContent = `Курсы ЦБ РФ на ${dt.toLocaleDateString('ru-RU')} (пред.: ${prev.toLocaleDateString('ru-RU')})`;
   }catch(e){
-    $('usdtSrc').textContent='Источник: ошибка загрузки';
-    $('usdtSrc2').textContent='Источник: ошибка загрузки';
+    console.error('CBR error:', e);
+    $('cbrSrc').textContent = 'Курсы ЦБ РФ: ошибка загрузки';
   }
 }
 

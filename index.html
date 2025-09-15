@@ -462,8 +462,15 @@ function calculate(){
 }
 
 /* ===== PDF ===== */
-function fmt(n,d=0){ if(!isFinite(n)) return '—'; const v=d?Number(n).toFixed(d):Math.round(n); return fmtSpaces(Number(v), d); }
-const nowrap = (val,sym) => `<span style="white-space:nowrap;">${fmt(val)} ${sym}</span>`;
+function fmt(n,d=0){
+  if(!isFinite(n)) return '—';
+  const v = d ? Number(n).toFixed(d) : Math.round(n);
+  return fmtSpaces(Number(v), d);
+}
+
+// НЕРАЗРЫВНЫЙ пробел + количество знаков
+const nowrap = (val, sym, d = 0) =>
+  `<span style="white-space:nowrap;">${fmt(val, d)}&nbsp;${sym}</span>`;
 
 async function downloadPDF(){
   try{
@@ -534,25 +541,37 @@ async function downloadPDF(){
     const sep = `style="height:1px;background:#000;margin:6px 24px 12px;"`;
 
     /* Курсы */
-    add(`
-      <div style="margin:0 24px 10px;">
-        <div style="font-weight:700; margin:6px 0;">Курсы валют</div>
-        <table style="width:100%; border-collapse:collapse; font-size:14px;">
-          <thead>
-            <tr>
-              <th ${tblHead}>Пара</th>
-              <th ${tblHead.replace('left','right')}>Курс</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td ${tdL}>1 USDT → ₽</td><td ${tdR}>${nowrap(rubUsdt,'₽')}</td></tr>
-            <tr><td ${tdL}>1 USDT → ₩</td><td ${tdR}>${nowrap(usdtKrw,'₩')}</td></tr>
-            <tr><td ${tdL}>1 EUR → ₽ (ЦБ)</td><td ${tdR}>${nowrap(eurRub,'₽')}</td></tr>
-            <tr><td ${tdL.replace('border-bottom:1px','border-bottom:0')} >1 KRW → ₽ (ЦБ)</td><td ${tdR.replace('border-bottom:1px','border-bottom:0')}>${nowrap(krwRub,'₽')}</td></tr>
-          </tbody>
-        </table>
-      </div>
-    `);
+add(`
+  <div style="margin:0 24px 10px;">
+    <div style="font-weight:700; margin:6px 0;">Курсы валют</div>
+    <table style="width:100%; border-collapse:collapse; font-size:14px;">
+      <thead>
+        <tr>
+          <th ${tblHead}>Пара</th>
+          <th ${tblHead.replace('left','right')}>Курс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td ${tdL}>1 USDT → ₽</td>
+          <td ${tdR}>${nowrap(rubUsdt, '₽', 4)}</td>
+        </tr>
+        <tr>
+          <td ${tdL}>1 USDT → ₩</td>
+          <td ${tdR}>${nowrap(usdtKrw, '₩', 2)}</td>
+        </tr>
+        <tr>
+          <td ${tdL}>1 EUR → ₽ (ЦБ)</td>
+          <td ${tdR}>${nowrap(eurRub, '₽', 6)}</td>
+        </tr>
+        <tr>
+          <td ${tdL.replace('border-bottom:1px solid #e5e7eb','border-bottom:0')}>1 KRW → ₽ (ЦБ)</td>
+          <td ${tdR.replace('border-bottom:1px solid #e5e7eb','border-bottom:0')}>${nowrap(krwRub, '₽', 6)}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+`);
 
     /* Корея */
     add(`

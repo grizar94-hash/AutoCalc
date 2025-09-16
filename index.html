@@ -373,75 +373,46 @@ function utilFee({importer,isEV,age,cc,kw}){
   return older ? 3604800 : 2742200;
 }
 
-/* ===== КУРСЫ ЦБ РФ — таймаут + резервные зеркала ===== */
+/* ===== КУРСЫ ЦБ РФ ===== */
+const cbrCacheKey = 'cbrRates';
+const cbrCacheTime = 12 * 60 * 60 * 1000; // 12 часов
+
 async function fetchCbr(){
-  // адреса по приоритету (все от одного проекта-зеркала ЦБ)
-  const urls = [
-    'https://www.cbr-xml-daily.ru/daily_json.js',
-    'https://www.cbr-xml-daily.ru/latest.js', // тот же JSON-документ
-    // мягкий CORS-прокси на случай корпоративных блокировок
-    'https://cors.isomorphic-git.org/https://www.cbr-xml-daily.ru/daily_json.js'
-  ];
-
-  // таймаут 6с на каждый источник
-  const fetchWithTimeout = (u, ms = 6000) => {
-    const ctrl = new AbortController();
-    const id = setTimeout(() => ctrl.abort('timeout'), ms);
-    return fetch(u + (u.includes('?') ? '&' : '?') + '_=' + Date.now(), {
-      cache: 'no-store',
-      mode: 'cors',
-      signal: ctrl.signal
-    }).finally(() => clearTimeout(id));
-  };
-
-  // пробуем по очереди
-  let data = null, lastErr = null;
-  for (const u of urls){
-    try{
-      const r = await fetchWithTimeout(u);
-      if(!r.ok) throw new Error('HTTP ' + r.status);
-      data = await r.json();
-      break;
-    }catch(e){
-      lastErr = e;
-      // пробуем следующий URL
+  try {
+    const cached = localStorage.getItem(cbrCacheKey);
+    if (cached) {
+      const { timestamp, data } = JSON.parse(cached);
+      if (Date.now() - timestamp < cbrCacheTime) {
+        updateCbrUI(data);
+        return;
+      }
     }
-  }
 
-  try{
-    if(!data) throw lastErr || new Error('no data');
+    const r = await fetch('https://www.cbr-xml-daily.ru/daily_json.js?_=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
 
-    // извлекаем курсы
-    const EUR = data?.Valute?.EUR ? data.Valute.EUR.Value / data.Valute.EUR.Nominal : NaN;
-    const KRW = data?.Valute?.KRW ? data.Valute.KRW.Value / data.Valute.KRW.Nominal : NaN;
+    const data = {
+      EUR: d.Valute.EUR.Value / d.Valute.EUR.Nominal,
+      KRW: d.Valute.KRW.Value / d.Valute.KRW.Nominal,
+      Date: d.Date,
+      PreviousDate: d.PreviousDate
+    };
 
-    $('eurRub').value = isFinite(EUR) ? fmtSpaces(EUR, 6) : '';
-    $('krwRub').value = isFinite(KRW) ? fmtSpaces(KRW, 6) : '';
-
-    // дата бюллетеня (в обоих форматах JSON есть поля Date/PreviousDate)
-    const dt = new Date(data.Date || data.date || Date.now());
-    const prev = new Date(data.PreviousDate || data.previousDate || Date.now());
-    $('cbrSrc').textContent =
-      `Курсы ЦБ РФ на ${dt.toLocaleDateString('ru-RU')} (пред.: ${prev.toLocaleDateString('ru-RU')})`;
-  }catch(e){
-    console.error('CBR error (all sources failed):', e);
+    localStorage.setItem(cbrCacheKey, JSON.stringify({ timestamp: Date.now(), data }));
+    updateCbrUI(data);
+  } catch(e){
+    console.error('CBR error:', e);
     $('cbrSrc').textContent = 'Курсы ЦБ РФ: ошибка загрузки';
   }
 }
 
-async function fetchUsdt(){
-  try{
-    const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=rub,krw&_=' + Date.now(), {cache:'no-store'});
-    const j = await r.json();
-    $('rubUsdt').value = fmtSpaces(Number(j.tether.rub),4);
-    $('usdtKrw').value = fmtSpaces(Number(j.tether.krw),2);
-    const now = new Date().toLocaleString('ru-RU');
-    $('usdtSrc').textContent  = `Источник: CoinGecko • ${now}`;
-    $('usdtSrc2').textContent = `Источник: CoinGecko • ${now}`;
-  }catch(e){
-    $('usdtSrc').textContent='Источник: ошибка загрузки';
-    $('usdtSrc2').textContent='Источник: ошибка загрузки';
-  }
+function updateCbrUI(d){
+  $('eurRub').value = fmtSpaces(d.EUR, 6);
+  $('krwRub').value = fmtSpaces(d.KRW, 6);
+  const dt = new Date(d.Date);
+  const prev = new Date(d.PreviousDate);
+  $('cbrSrc').textContent = `Курсы ЦБ РФ на ${dt.toLocaleDateString('ru-RU')} (пред.: ${prev.toLocaleDateString('ru-RU')})`;
 }
 
 /* ===== управление UI ===== */

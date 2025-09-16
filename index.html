@@ -138,6 +138,7 @@
   hr{ border:0; border-top:1px solid var(--border); margin:12px 0 }
   .auto-output{ background:var(--panel) }
 
+  /* маленькая кнопка в заголовке секции */
   .header-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
   button.mini{width:auto;padding:8px 10px;font-size:13px}
 </style>
@@ -370,22 +371,22 @@ function utilFee({importer,isEV,age,cc,kw}){
 }
 
 /* ===== КУРСЫ (USDT + ЦБ РФ) ===== */
-/* --- USDT (CoinGecko), кэш 5 минут --- */
+/* --- USDT (CoinGecko), кэш 5 минут, с принудительным обновлением --- */
 const USDT_RATE_CACHE_KEY = 'usdt_rates_cache_v1';
 const USDT_RATE_TTL_MS = 5 * 60 * 1000;
 
-async function fetchUsdt(){
-  // если пользователь ввёл руками — не затираем на вводе; авто только по кнопке/старте
+async function fetchUsdt(force = false){
   try{
-    const cached = localStorage.getItem(USDT_RATE_CACHE_KEY);
-    if (cached){
-      const obj = JSON.parse(cached);
-      if (obj.ts && (Date.now()-obj.ts) < USDT_RATE_TTL_MS){
-        applyUsdt(obj.data);
-        return;
+    if (!force){
+      const cached = localStorage.getItem(USDT_RATE_CACHE_KEY);
+      if (cached){
+        const obj = JSON.parse(cached);
+        if (obj.ts && (Date.now()-obj.ts) < USDT_RATE_TTL_MS){
+          applyUsdt(obj.data);
+          return;
+        }
       }
     }
-
     const url='https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=rub,krw,usd';
     const r = await fetch(url, { cache:'no-store' });
     if(!r.ok) throw new Error('USDT HTTP '+r.status);
@@ -413,16 +414,35 @@ function applyUsdt(d){
   $('usdtSrc2').textContent = `Источник: CoinGecko • ${when}`;
 }
 
-/* --- ЦБ РФ (cbr-xml-daily), кэш 12 часов --- */
-const cbrCacheKey = 'cbrRates_v2';
-const cbrCacheTime = 12 * 60 * 60 * 1000;
+/* --- ЦБ РФ (cbr-xml-daily), авто-обновление раз в день по МСК --- */
+const cbrCacheKey = 'cbrRates_v3';          // новый ключ для сброса старого кеша
+const cbrCacheTime = 2 * 60 * 60 * 1000;    // TTL 2 часа
 
-async function fetchCbr(){
+// Утилиты времени по МСК
+const fmtYMD_MSK = (d) =>
+  new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Moscow',year:'numeric',month:'2-digit',day:'2-digit'}).format(d);
+const nowMSK = () =>
+  new Date(new Date().toLocaleString('en-US', { timeZone:'Europe/Moscow' }));
+
+function shouldForceDailyCbrUpdate(cachedData){
+  const now = nowMSK();
+  const hour = now.getHours() + now.getMinutes()/60;
+  const publishedCutoff = 12 + 15/60; // ~12:15 МСК — обычно уже опубликовано
+
+  const todayStr  = fmtYMD_MSK(now);
+  const cachedStr = cachedData?.Date ? fmtYMD_MSK(new Date(cachedData.Date)) : '';
+
+  return (todayStr !== cachedStr) && (hour >= publishedCutoff);
+}
+
+async function fetchCbr(force = false){
   try{
-    const cached = localStorage.getItem(cbrCacheKey);
-    if (cached){
-      const { ts, data } = JSON.parse(cached);
-      if (Date.now()-ts < cbrCacheTime){
+    const cachedRaw = localStorage.getItem(cbrCacheKey);
+    if (!force && cachedRaw){
+      const { ts, data } = JSON.parse(cachedRaw);
+      const freshByTTL = (Date.now() - ts) < cbrCacheTime;
+      const needDailyRefresh = shouldForceDailyCbrUpdate(data);
+      if (freshByTTL && !needDailyRefresh){
         updateCbrUI(data);
         return;
       }
@@ -431,6 +451,7 @@ async function fetchCbr(){
     const r = await fetch('https://www.cbr-xml-daily.ru/daily_json.js?_=' + Date.now(), { cache:'no-store' });
     if(!r.ok) throw new Error('CBR HTTP '+r.status);
     const d = await r.json();
+
     const val = d.Valute || {};
     const one = code => (val[code]?.Value && val[code]?.Nominal) ? (val[code].Value / val[code].Nominal) : null;
 
@@ -438,7 +459,8 @@ async function fetchCbr(){
       EUR: one('EUR'),
       KRW: one('KRW'),
       Date: d.Date,
-      PreviousDate: d.PreviousDate
+      PreviousDate: d.PreviousDate,
+      Timestamp: d.Timestamp
     };
 
     localStorage.setItem(cbrCacheKey, JSON.stringify({ ts: Date.now(), data }));
@@ -452,10 +474,20 @@ async function fetchCbr(){
 function updateCbrUI(d){
   if (d?.EUR) $('eurRub').value = Number(d.EUR).toFixed(6);
   if (d?.KRW) $('krwRub').value = Number(d.KRW).toFixed(6);
+
   const dt = d?.Date ? new Date(d.Date) : null;
   const prev = d?.PreviousDate ? new Date(d.PreviousDate) : null;
+
+  let pubPart = '';
+  if (d?.Timestamp){
+    const pubMsk = new Date(d.Timestamp);
+    const timeMsk = new Intl.DateTimeFormat('ru-RU',{timeZone:'Europe/Moscow',hour:'2-digit',minute:'2-digit'}).format(pubMsk);
+    const timeKst = new Intl.DateTimeFormat('ru-RU',{timeZone:'Asia/Seoul',   hour:'2-digit',minute:'2-digit'}).format(pubMsk);
+    pubPart = ` • опубликованы в ${timeMsk} МСК (≈ ${timeKst} KST)`;
+  }
+
   $('cbrSrc').textContent = dt
-    ? `Курсы ЦБ РФ на ${dt.toLocaleDateString('ru-RU')}${prev?` (пред.: ${prev.toLocaleDateString('ru-RU')})`:''}`
+    ? `Курсы ЦБ РФ на ${dt.toLocaleDateString('ru-RU')}${prev?` (пред.: ${prev.toLocaleDateString('ru-RU')})`:''}${pubPart}`
     : 'Курсы ЦБ РФ';
 }
 
@@ -741,18 +773,32 @@ document.addEventListener('DOMContentLoaded', ()=>{
     localStorage.setItem('bg', bgSelect.value);
   });
 
-  // Автокурсы (кнопка «Обновить» тоже сюда)
+  // Автокурсы
   const refreshBtn = $('refreshRates');
   const setRefreshing = on => { if(refreshBtn){ refreshBtn.disabled=on; refreshBtn.textContent=on?'Обновляю…':'Обновить'; }};
-  const refreshAll = async ()=>{
+  const refreshAll = async (force = false)=>{
     setRefreshing(true);
     try{
-      await Promise.all([fetchUsdt(), fetchCbr()]);
-      recompute(); // пересчёт после обновления курсов
+      await Promise.all([fetchUsdt(force), fetchCbr(force)]);
+      recompute();
     } finally { setRefreshing(false); }
   };
-  if (refreshBtn){ refreshBtn.addEventListener('click', refreshAll); }
-  refreshAll();
+  if (refreshBtn){
+    // По клику — всегда свежие с сервера
+    refreshBtn.addEventListener('click', ()=>refreshAll(true));
+  }
+
+  // На старте — быстрый кеш, затем проверка «новый день по МСК» после публикации
+  (async ()=>{
+    await refreshAll(false);
+    const cachedRaw = localStorage.getItem(cbrCacheKey);
+    if (cachedRaw){
+      const { data } = JSON.parse(cachedRaw);
+      if (shouldForceDailyCbrUpdate(data)){
+        await refreshAll(true);
+      }
+    }
+  })();
 
   // Кнопки
   insuranceBtn.addEventListener('click', ()=>{

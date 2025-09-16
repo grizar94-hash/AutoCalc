@@ -47,27 +47,20 @@
   /* ===== БАЗА ===== */
   *{ box-sizing:border-box }
   html,body{ height:100% }
-  html{
-    background:var(--bg);
-    overscroll-behavior: none;
-  }
+  html{ background:var(--bg); overscroll-behavior: none; }
   body{
     font-family:'Inter','Roboto','Segoe UI',Arial,sans-serif;
-    color:var(--text);
-    margin:0; padding:20px; position:relative;
-    background:transparent;
+    color:var(--text); margin:0; padding:20px; position:relative; background:transparent;
   }
 
+  /* Фон */
   html::before{
     content:""; position:fixed; inset:0; pointer-events:none; z-index:-1;
     opacity:var(--bg-img-opacity); filter:grayscale(100%);
-    background-position:center; background-size:cover; background-attachment:fixed;
-    display:none;
+    background-position:center; background-size:cover; background-attachment:fixed; display:none;
   }
   html[data-bg="bmw"]::before{ display:block; background-image:url('bg_bmw.jpg'); }
-  @supports (-webkit-touch-callout: none){
-    html[data-bg="bmw"]::before{ background-attachment:scroll; }
-  }
+  @supports (-webkit-touch-callout: none){ html[data-bg="bmw"]::before{ background-attachment:scroll; } }
 
   .wrap{ max-width:820px; margin:0 auto; position:relative; z-index:1; }
   header{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
@@ -75,31 +68,21 @@
 
   .switchers{ display:flex; gap:10px; flex-wrap:wrap; }
   .switchers .group{ display:flex; gap:6px; align-items:center; font-size:12px; color:var(--muted); }
-  .switchers select{
-    padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:var(--panel); color:var(--text);
-  }
+  .switchers select{ padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:var(--panel); color:var(--text); }
 
-  .section{
-    background:var(--panel); border:1px solid var(--border);
-    border-radius:var(--radius); padding:20px; margin-bottom:20px;
-    box-shadow:var(--shadow);
-  }
+  .section{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:20px; box-shadow:var(--shadow); }
   .section h3{ margin:0 0 12px; font-size:18px; font-weight:600; }
 
   label{ display:block; margin-top:12px; font-weight:500; font-size:14px; }
   input, select{
-    width:100%; padding:10px 12px;
-    border:1px solid var(--border); border-radius:var(--radius);
+    width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:var(--radius);
     font-size:15px; margin-top:6px; background:var(--panel); color:var(--text);
   }
   input:focus, select:focus{ outline:none; border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
 
   .row{ display:flex; gap:14px; flex-wrap:wrap; }
   .row>div{ flex:1 1 220px; }
-  .subpanel{
-    margin-top:14px; border:1px solid var(--border); border-radius:var(--radius);
-    padding:14px; background:color-mix(in hsl, var(--panel), transparent 0%);
-  }
+  .subpanel{ margin-top:14px; border:1px solid var(--border); border-radius:var(--radius); padding:14px; background:color-mix(in hsl, var(--panel), transparent 0%); }
   .subpanel h4{ margin:0 0 10px; font-size:15px; font-weight:600; }
   .grid{ display:grid; grid-template-columns:1fr auto; gap:8px 10px; align-items:center }
   .note{ font-size:12px; color:var(--muted); margin-top:4px }
@@ -107,32 +90,21 @@
 
   .radio-line{ display:flex; gap:10px; flex-wrap:wrap; margin-top:6px }
   .radio-line label{
-    display:inline-flex; align-items:center; gap:8px;
-    padding:8px 12px; border:1px solid var(--border); border-radius:999px;
-    font-size:14px; cursor:pointer; background:var(--panel); white-space:nowrap;
-    transition:background .15s,border-color .15s, box-shadow .15s;
+    display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid var(--border); border-radius:999px;
+    font-size:14px; cursor:pointer; background:var(--panel); white-space:nowrap; transition:background .15s,border-color .15s, box-shadow .15s;
   }
   .radio-line input{ appearance:none; width:14px; height:14px; border-radius:50%; border:2px solid var(--muted); display:inline-block; position:relative; }
   .radio-line input:checked{ border-color:#3b82f6; box-shadow:inset 0 0 0 3px var(--panel), 0 0 0 3px #3b82f6; }
   .radio-line input:focus-visible{ outline:2px solid var(--accent); }
-  .radio-line input + span{ font-weight:500 }
-  .radio-line input:checked + span{ font-weight:600 }
+  .radio-line input + span{ font-weight:500 } .radio-line input:checked + span{ font-weight:600 }
 
   button, .toggle-btn{
-    width:100%; padding:14px; margin-top:14px;
-    font-size:16px; font-weight:600;
-    border:none; border-radius:var(--radius);
-    cursor:pointer; background:var(--btn); color:var(--btn-text);
-    transition:.2s; box-shadow:var(--shadow);
+    width:100%; padding:14px; margin-top:14px; font-size:16px; font-weight:600;
+    border:none; border-radius:var(--radius); cursor:pointer; background:var(--btn); color:var(--btn-text); transition:.2s; box-shadow:var(--shadow);
   }
   button:hover{ background:var(--btn-hover) }
 
-  .result{
-    margin-top:20px; padding:20px;
-    background:var(--panel); border:1px solid var(--border);
-    border-radius:var(--radius); font-size:16px;
-    box-shadow:var(--shadow);
-  }
+  .result{ margin-top:20px; padding:20px; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); font-size:16px; box-shadow:var(--shadow); }
   .result p{ margin:10px 0; font-weight:600 }
   hr{ border:0; border-top:1px solid var(--border); margin:12px 0 }
   .auto-output{ background:var(--panel) }
@@ -274,7 +246,7 @@
       </div>
     </div>
 
-    <label>Услуги в брокера (₽): <input type="text" inputmode="numeric" id="brokerRub" placeholder=""></label>
+    <label>Услуги в России (₽): <input type="text" inputmode="numeric" id="brokerRub" placeholder=""></label>
     <label>Доставка по России (₽): <input type="text" inputmode="numeric" id="deliveryRub" placeholder=""></label>
   </div>
 
@@ -371,6 +343,7 @@ function utilFee({importer,isEV,age,cc,kw}){
 /* --- USDT (CoinGecko), кэш 5 мин --- */
 const USDT_RATE_CACHE_KEY = 'usdt_rates_cache_v1';
 const USDT_RATE_TTL_MS = 5 * 60 * 1000;
+
 async function fetchUsdt(force = false){
   try{
     if (!force){
@@ -403,102 +376,82 @@ function applyUsdt(d){
   $('usdtSrc2').textContent = `Источник: CoinGecko • ${when}`;
 }
 
-/* --- ЦБ РФ (daily + archive fallback) --- */
-const cbrCacheKey = 'cbrRates_v4';          // новый ключ — выбиваем старый кеш
-const cbrCacheTime = 2 * 60 * 60 * 1000;    // 2 часа
+/* --- ЦБ РФ (archive-first; надёжная МСК-логика дат) --- */
+const cbrCacheKey = 'cbrRates_v6';          // новый ключ
+const cbrCacheTime = 30 * 60 * 1000;        // 30 минут
 
-const fmtYMD = (d,tz) => new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit'}).format(d);
-const nowMSK = () => new Date(new Date().toLocaleString('en-US',{timeZone:'Europe/Moscow'}));
-
-/* кандидатные даты для поиска самого свежего фика (по МСК) */
-function candidateCbrDates(){
-  const now = nowMSK();
-  const afterPublish = (now.getHours()+now.getMinutes()/60) >= (12 + 15/60); // ~12:15
-  const list = [];
-  // если уже после публикации — пробуем сегодня, иначе начнём со вчера
-  let cursor = new Date(now);
-  if (!afterPublish) cursor.setDate(cursor.getDate()-1);
-  for(let i=0;i<4;i++){
-    list.push(fmtYMD(cursor,'Europe/Moscow'));
-    cursor.setDate(cursor.getDate()-1);
+// Формируем YYYY-MM-DD в указанной TZ для переданной "мгновенной" отметки времени
+const ymdInTZ = (ms, tz='Europe/Moscow') => {
+  const fmt = new Intl.DateTimeFormat('en-CA',{ timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' });
+  return fmt.format(new Date(ms)); // без парсинга строк
+};
+// Возвращаем 4 кандидатные даты по МСК: сегодня, вчера, -2, -3
+const candidateCbrDates = () => {
+  const out=[]; let t=Date.now();
+  for(let i=0;i<6 && out.length<4;i++){ // защищаемся от возможного дублирования при DST
+    const ymd = ymdInTZ(t,'Europe/Moscow');
+    if (out[out.length-1] !== ymd) out.push(ymd);
+    t -= 24*60*60*1000;
   }
-  return list; // ['2025-09-16','2025-09-15','2025-09-14','2025-09-13'] например
-}
-
+  return out;
+};
 function mapCbrJson(d){
-  const v = d?.Valute || {};
-  const one = c => (v[c]?.Value && v[c]?.Nominal) ? (v[c].Value / v[c].Nominal) : null;
-  return { EUR: one('EUR'), KRW: one('KRW'), Date: d?.Date, PreviousDate: d?.PreviousDate, Timestamp: d?.Timestamp };
+  const v=d?.Valute||{};
+  const one=c=>(v[c]?.Value&&v[c]?.Nominal)?(v[c].Value/v[c].Nominal):null;
+  return { EUR:one('EUR'), KRW:one('KRW'), Date:d?.Date, PreviousDate:d?.PreviousDate, Timestamp:d?.Timestamp };
 }
 
 async function fetchCbr(force=false){
   try{
-    // кеш
-    const cachedRaw = localStorage.getItem(cbrCacheKey);
-    if (!force && cachedRaw){
-      const { ts, data } = JSON.parse(cachedRaw);
-      const freshByTTL = (Date.now()-ts) < cbrCacheTime;
-      if (freshByTTL){ updateCbrUI(data); return; }
-    }
-
-    // 1) пробуем основной daily_json
-    let data = null;
-    try{
-      const r = await fetch('https://www.cbr-xml-daily.ru/daily_json.js?_=' + Date.now(), { cache:'no-store' });
-      if (r.ok){
-        const j = await r.json();
-        data = mapCbrJson(j);
-      }
-    }catch(e){ /* игнор, пойдём в архив */ }
-
-    // 2) если дата подозрительно старая — идём по архивам (свежая -> назад)
-    const wantDates = candidateCbrDates();
-    const gotStr = data?.Date ? fmtYMD(new Date(data.Date),'Europe/Moscow') : '';
-    const isStale = !gotStr || wantDates[0] !== gotStr && wantDates.indexOf(gotStr) > 1; // сильно отстаёт
-
-    if (!data || isStale){
-      for (const ymd of wantDates){
-        const [Y,M,D] = ymd.split('-');
-        try{
-          const u = `https://www.cbr-xml-daily.ru/archive/${Y}/${M}/${D}/daily_json.js?_=${Date.now()}`;
-          const r2 = await fetch(u, { cache:'no-store' });
-          if (r2.ok){
-            const j2 = await r2.json();
-            data = mapCbrJson(j2);
-            // нашли — выходим из цикла
-            break;
-          }
-        }catch(e){ /* пробуем следующую дату */ }
+    if (!force){
+      const cachedRaw = localStorage.getItem(cbrCacheKey);
+      if (cachedRaw){
+        const { ts, data } = JSON.parse(cachedRaw);
+        if ((Date.now()-ts) < cbrCacheTime){ updateCbrUI(data); return; }
       }
     }
 
-    if (!data){ throw new Error('CBR not available'); }
+    let data=null;
+
+    // 1) Архив: сегодня -> вчера -> -2 -> -3
+    for (const ymd of candidateCbrDates()){
+      const [Y,M,D]=ymd.split('-');
+      const u=`https://www.cbr-xml-daily.ru/archive/${Y}/${M}/${D}/daily_json.js?_=${Date.now()}`;
+      try{
+        const r=await fetch(u,{cache:'reload',mode:'cors',referrerPolicy:'no-referrer'});
+        if(r.ok){ data=mapCbrJson(await r.json()); break; }
+      }catch{}
+    }
+
+    // 2) Фоллбек: общий daily_json
+    if(!data){
+      const r=await fetch('https://www.cbr-xml-daily.ru/daily_json.js?_='+Date.now(),
+        {cache:'reload',mode:'cors',referrerPolicy:'no-referrer'});
+      if(r.ok) data=mapCbrJson(await r.json());
+    }
+
+    if(!data) throw new Error('CBR not available');
 
     localStorage.setItem(cbrCacheKey, JSON.stringify({ ts: Date.now(), data }));
     updateCbrUI(data);
   }catch(e){
     console.error('CBR error:', e);
-    $('cbrSrc').textContent = 'Курсы ЦБ РФ: ошибка загрузки';
+    $('cbrSrc').textContent='Курсы ЦБ РФ: ошибка загрузки';
   }
 }
-
 function updateCbrUI(d){
-  if (d?.EUR) $('eurRub').value = Number(d.EUR).toFixed(6);
-  if (d?.KRW) $('krwRub').value = Number(d.KRW).toFixed(6);
-
-  const dt = d?.Date ? new Date(d.Date) : null;
-  const prev = d?.PreviousDate ? new Date(d.PreviousDate) : null;
-
-  let pubPart = '';
-  if (d?.Timestamp){
-    const pubMsk = new Date(d.Timestamp);
-    const timeMsk = new Intl.DateTimeFormat('ru-RU',{timeZone:'Europe/Moscow',hour:'2-digit',minute:'2-digit'}).format(pubMsk);
-    const timeKst = new Intl.DateTimeFormat('ru-RU',{timeZone:'Asia/Seoul',   hour:'2-digit',minute:'2-digit'}).format(pubMsk);
-    pubPart = ` • опубликованы в ${timeMsk} МСК (≈ ${timeKst} KST)`;
+  if(d?.EUR) $('eurRub').value = Number(d.EUR).toFixed(6);
+  if(d?.KRW) $('krwRub').value = Number(d.KRW).toFixed(6);
+  const dt=d?.Date?new Date(d.Date):null, prev=d?.PreviousDate?new Date(d.PreviousDate):null;
+  let pub='';
+  if(d?.Timestamp){
+    const t=new Date(d.Timestamp);
+    const msk=new Intl.DateTimeFormat('ru-RU',{timeZone:'Europe/Moscow',hour:'2-digit',minute:'2-digit'}).format(t);
+    const kst=new Intl.DateTimeFormat('ru-RU',{timeZone:'Asia/Seoul',   hour:'2-digit',minute:'2-digit'}).format(t);
+    pub=` • опубликованы в ${msk} МСК (≈ ${kst} KST)`;
   }
-
   $('cbrSrc').textContent = dt
-    ? `Курсы ЦБ РФ на ${dt.toLocaleDateString('ru-RU')}${prev?` (пред.: ${prev.toLocaleDateString('ru-RU')})`:''}${pubPart}`
+    ? `Курсы ЦБ РФ на ${dt.toLocaleDateString('ru-RU')}${prev?` (пред.: ${prev.toLocaleDateString('ru-RU')})`:''}${pub}`
     : 'Курсы ЦБ РФ';
 }
 
@@ -764,7 +717,7 @@ async function downloadPDF(){
 }
 
 /* ===== init ===== */
-document.addEventListener('DOMContentLoaded', ()=>{
+document.addEventListener('DOMContentLoaded', async ()=>{
   // Тема
   const root = document.documentElement;
   const savedTheme = localStorage.getItem('theme') || 'system';
@@ -784,6 +737,11 @@ document.addEventListener('DOMContentLoaded', ()=>{
     localStorage.setItem('bg', bgSelect.value);
   });
 
+  // Чистим старые кеши ЦБ
+  Object.keys(localStorage).forEach(k=>{
+    if(/^cbrRates_/.test(k) && k!==cbrCacheKey){ try{ localStorage.removeItem(k); }catch{} }
+  });
+
   // Автокурсы
   const refreshBtn = $('refreshRates');
   const setRefreshing = on => { if(refreshBtn){ refreshBtn.disabled=on; refreshBtn.textContent=on?'Обновляю…':'Обновить'; }};
@@ -794,13 +752,28 @@ document.addEventListener('DOMContentLoaded', ()=>{
       recompute();
     } finally { setRefreshing(false); }
   };
+
   if (refreshBtn){
-    refreshBtn.addEventListener('click', ()=>refreshAll(true)); // по клику — всегда по сети
+    refreshBtn.addEventListener('click', async ()=>{
+      try{
+        // на всякий случай убираем возможные SW и кэши (старые версии)
+        if ('serviceWorker' in navigator){
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map(r=>r.unregister()));
+        }
+        if ('caches' in window){
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k=>caches.delete(k)));
+        }
+      }catch{}
+      try{ localStorage.removeItem(cbrCacheKey); }catch{}
+      refreshAll(true);
+    });
   }
 
-  // старт: кеш → при необходимости дотягиваем архив
+  // Стартовый прогон
   refreshAll(false);
-  
+
   // Кнопки
   insuranceBtn.addEventListener('click', ()=>{
     insuranceBtn.classList.toggle('active');

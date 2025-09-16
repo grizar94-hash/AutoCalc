@@ -138,7 +138,6 @@
   hr{ border:0; border-top:1px solid var(--border); margin:12px 0 }
   .auto-output{ background:var(--panel) }
 
-  /* маленькая кнопка в заголовке секции */
   .header-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
   button.mini{width:auto;padding:8px 10px;font-size:13px}
 </style>
@@ -353,15 +352,12 @@ function dutyICE({table,age,cc,ts,eurRub}){
 function dutyEV(ts){ return ts*0.15; }
 function customsFee(ts){ return CUSTOMS_FEE.find(b=>ts<=b.max).fee; }
 
-/* === Утильсбор 2025 ===
-   ФИЗ: льготный 3400/5200.
-   ЮЛ/ИП: фикс-суммы по таблице (ЭВ и ДВС). */
+/* === Утильсбор 2025 === */
 function utilFee({importer,isEV,age,cc,kw}){
   if (importer==='individual'){
     return (age === '<3') ? 3400 : 5200;
   }
-  // ЮЛ/ИП
-  const older = (age === '>=3' || age === '>5' || age === '3-5'); // «старше 3» для ЭВ; для ДВС твои градации >3 тоже считаем "older"
+  const older = (age === '>=3' || age === '>5' || age === '3-5');
   if (isEV){
     return older ? 1174000 : 667400;
   }
@@ -373,46 +369,94 @@ function utilFee({importer,isEV,age,cc,kw}){
   return older ? 3604800 : 2742200;
 }
 
-/* ===== КУРСЫ ЦБ РФ ===== */
-const cbrCacheKey = 'cbrRates';
-const cbrCacheTime = 12 * 60 * 60 * 1000; // 12 часов
+/* ===== КУРСЫ (USDT + ЦБ РФ) ===== */
+/* --- USDT (CoinGecko), кэш 5 минут --- */
+const USDT_RATE_CACHE_KEY = 'usdt_rates_cache_v1';
+const USDT_RATE_TTL_MS = 5 * 60 * 1000;
+
+async function fetchUsdt(){
+  // если пользователь ввёл руками — не затираем на вводе; авто только по кнопке/старте
+  try{
+    const cached = localStorage.getItem(USDT_RATE_CACHE_KEY);
+    if (cached){
+      const obj = JSON.parse(cached);
+      if (obj.ts && (Date.now()-obj.ts) < USDT_RATE_TTL_MS){
+        applyUsdt(obj.data);
+        return;
+      }
+    }
+
+    const url='https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=rub,krw,usd';
+    const r = await fetch(url, { cache:'no-store' });
+    if(!r.ok) throw new Error('USDT HTTP '+r.status);
+    const j = await r.json();
+    const data = {
+      USDT_RUB: j?.tether?.rub ?? null,
+      USDT_KRW: j?.tether?.krw ?? null,
+      USDT_USD: j?.tether?.usd ?? null,
+      ts: Date.now()
+    };
+    localStorage.setItem(USDT_RATE_CACHE_KEY, JSON.stringify({ts:data.ts, data}));
+    applyUsdt(data);
+  }catch(e){
+    console.error('USDT error:', e);
+    $('usdtSrc').textContent = 'Источник: ошибка загрузки USDT';
+    $('usdtSrc2').textContent = 'Источник: ошибка загрузки USDT';
+  }
+}
+
+function applyUsdt(d){
+  if (d?.USDT_RUB) $('rubUsdt').value = Number(d.USDT_RUB).toFixed(6);
+  if (d?.USDT_KRW) $('usdtKrw').value = Number(d.USDT_KRW).toFixed(6);
+  const when = d?.ts ? new Date(d.ts).toLocaleTimeString('ru-RU') : '';
+  $('usdtSrc').textContent  = `Источник: CoinGecko • ${when}`;
+  $('usdtSrc2').textContent = `Источник: CoinGecko • ${when}`;
+}
+
+/* --- ЦБ РФ (cbr-xml-daily), кэш 12 часов --- */
+const cbrCacheKey = 'cbrRates_v2';
+const cbrCacheTime = 12 * 60 * 60 * 1000;
 
 async function fetchCbr(){
-  try {
+  try{
     const cached = localStorage.getItem(cbrCacheKey);
-    if (cached) {
-      const { timestamp, data } = JSON.parse(cached);
-      if (Date.now() - timestamp < cbrCacheTime) {
+    if (cached){
+      const { ts, data } = JSON.parse(cached);
+      if (Date.now()-ts < cbrCacheTime){
         updateCbrUI(data);
         return;
       }
     }
 
-    const r = await fetch('https://www.cbr-xml-daily.ru/daily_json.js?_=' + Date.now(), { cache: 'no-store' });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const r = await fetch('https://www.cbr-xml-daily.ru/daily_json.js?_=' + Date.now(), { cache:'no-store' });
+    if(!r.ok) throw new Error('CBR HTTP '+r.status);
     const d = await r.json();
+    const val = d.Valute || {};
+    const one = code => (val[code]?.Value && val[code]?.Nominal) ? (val[code].Value / val[code].Nominal) : null;
 
     const data = {
-      EUR: d.Valute.EUR.Value / d.Valute.EUR.Nominal,
-      KRW: d.Valute.KRW.Value / d.Valute.KRW.Nominal,
+      EUR: one('EUR'),
+      KRW: one('KRW'),
       Date: d.Date,
       PreviousDate: d.PreviousDate
     };
 
-    localStorage.setItem(cbrCacheKey, JSON.stringify({ timestamp: Date.now(), data }));
+    localStorage.setItem(cbrCacheKey, JSON.stringify({ ts: Date.now(), data }));
     updateCbrUI(data);
-  } catch(e){
+  }catch(e){
     console.error('CBR error:', e);
     $('cbrSrc').textContent = 'Курсы ЦБ РФ: ошибка загрузки';
   }
 }
 
 function updateCbrUI(d){
-  $('eurRub').value = fmtSpaces(d.EUR, 6);
-  $('krwRub').value = fmtSpaces(d.KRW, 6);
-  const dt = new Date(d.Date);
-  const prev = new Date(d.PreviousDate);
-  $('cbrSrc').textContent = `Курсы ЦБ РФ на ${dt.toLocaleDateString('ru-RU')} (пред.: ${prev.toLocaleDateString('ru-RU')})`;
+  if (d?.EUR) $('eurRub').value = Number(d.EUR).toFixed(6);
+  if (d?.KRW) $('krwRub').value = Number(d.KRW).toFixed(6);
+  const dt = d?.Date ? new Date(d.Date) : null;
+  const prev = d?.PreviousDate ? new Date(d.PreviousDate) : null;
+  $('cbrSrc').textContent = dt
+    ? `Курсы ЦБ РФ на ${dt.toLocaleDateString('ru-RU')}${prev?` (пред.: ${prev.toLocaleDateString('ru-RU')})`:''}`
+    : 'Курсы ЦБ РФ';
 }
 
 /* ===== управление UI ===== */
@@ -697,10 +741,16 @@ document.addEventListener('DOMContentLoaded', ()=>{
     localStorage.setItem('bg', bgSelect.value);
   });
 
-  // Автокурсы
+  // Автокурсы (кнопка «Обновить» тоже сюда)
   const refreshBtn = $('refreshRates');
   const setRefreshing = on => { if(refreshBtn){ refreshBtn.disabled=on; refreshBtn.textContent=on?'Обновляю…':'Обновить'; }};
-  const refreshAll = async ()=>{ setRefreshing(true); try{ await Promise.all([fetchUsdt(), fetchCbr()]); } finally{ setRefreshing(false); } };
+  const refreshAll = async ()=>{
+    setRefreshing(true);
+    try{
+      await Promise.all([fetchUsdt(), fetchCbr()]);
+      recompute(); // пересчёт после обновления курсов
+    } finally { setRefreshing(false); }
+  };
   if (refreshBtn){ refreshBtn.addEventListener('click', refreshAll); }
   refreshAll();
 
